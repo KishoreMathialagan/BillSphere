@@ -1,0 +1,80 @@
+import { createContext, useContext, useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
+import { jwtDecode } from 'jwt-decode';
+
+interface User {
+  sub: string;
+  tenant_id: string;
+  role: string;
+}
+
+interface AuthContextType {
+  user: User | null;
+  tenantState: string | null;
+  login: (access: string, refresh: string) => void;
+  logout: () => void;
+  isAuthenticated: boolean;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [tenantState, setTenantState] = useState<string | null>(null);
+
+  const fetchTenantConfig = async (token: string) => {
+    try {
+      const res = await fetch('http://localhost:8000/api/v1/setup/config', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTenantState(data.state || null);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      try {
+        const decoded = jwtDecode<User>(token);
+        setUser(decoded);
+        fetchTenantConfig(token);
+      } catch (err) {
+        logout();
+      }
+    }
+  }, []);
+
+  const login = (access: string, refresh: string) => {
+    localStorage.setItem('access_token', access);
+    localStorage.setItem('refresh_token', refresh);
+    const decoded = jwtDecode<User>(access);
+    setUser(decoded);
+    fetchTenantConfig(access);
+  };
+
+  const logout = () => {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    setUser(null);
+    setTenantState(null);
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, tenantState, login, logout, isAuthenticated: !!user }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
