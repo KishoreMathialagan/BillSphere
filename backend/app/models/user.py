@@ -8,4 +8,6 @@ class User(Base):
     tenant_id = Column(String, ForeignKey("tenants.tenant_id"))
     email = Column(String, unique=True, index=True)
     password_hash = Column(String)
+    first_name = Column(String, nullable=True)
+    last_name = Column(String, nullable=True)
     role = Column(String, default="Cashier")

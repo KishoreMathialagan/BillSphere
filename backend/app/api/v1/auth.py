@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from app.schemas.auth import Login, Token, RefreshRequest
+from app.schemas.auth import Login, Token, RefreshRequest, RegisterRequest
 from app.db.session import get_db
 from app.models.user import User
-from app.core.security import verify_password, create_access_token, create_refresh_token
+from app.models.tenant import Tenant
+from app.core.security import verify_password, get_password_hash, create_access_token, create_refresh_token
 from jose import jwt, JWTError
 from app.core.config import settings
 
@@ -51,3 +52,37 @@ def refresh_token(request: RefreshRequest, db: Session = Depends(get_db)):
     )
     new_refresh_token = create_refresh_token(subject=user.user_id)
     return {"access_token": access_token, "refresh_token": new_refresh_token, "token_type": "bearer"}
+
+@router.post("/register", response_model=Token)
+def register(user_in: RegisterRequest, db: Session = Depends(get_db)):
+    existing_user = db.query(User).filter(User.email == user_in.email).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User with this email already exists."
+        )
+    
+    tenant = Tenant(
+        business_name=user_in.business_name
+    )
+    db.add(tenant)
+    db.commit()
+    db.refresh(tenant)
+    
+    new_user = User(
+        email=user_in.email,
+        password_hash=get_password_hash(user_in.password),
+        first_name=user_in.first_name,
+        last_name=user_in.last_name,
+        role="Admin",
+        tenant_id=tenant.tenant_id
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    
+    access_token = create_access_token(
+        subject=new_user.user_id, tenant_id=new_user.tenant_id, role=new_user.role
+    )
+    refresh_token = create_refresh_token(subject=new_user.user_id)
+    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}

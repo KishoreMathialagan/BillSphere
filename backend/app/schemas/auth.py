@@ -16,3 +16,10 @@ class Login(BaseModel):
     
 class RefreshRequest(BaseModel):
     refresh_token: str
+
+class RegisterRequest(BaseModel):
+    first_name: str
+    last_name: str
+    email: EmailStr
+    password: str
+    business_name: str
