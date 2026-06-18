@@ -18,7 +18,7 @@ class TransferItemResponse(BaseModel):
     quantity: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class TransferResponse(BaseModel):
     transfer_id: str
@@ -33,4 +33,4 @@ class TransferResponse(BaseModel):
     items: List[TransferItemResponse]
 
     class Config:
-        orm_mode = True
+        from_attributes = True

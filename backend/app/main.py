@@ -35,3 +35,7 @@ app.include_router(forecasting.router, prefix="/api/v1/forecasting", tags=["Fore
 @app.get("/")
 def root():
     return {"message": "Welcome to Bill Sphere API"}
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}

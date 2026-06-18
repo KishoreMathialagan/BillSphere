@@ -15,7 +15,7 @@ class AccountResponse(AccountCreate):
     tenant_id: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class JournalLineCreate(BaseModel):
     account_id: str
@@ -33,7 +33,7 @@ class JournalLineResponse(JournalLineCreate):
     journal_id: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class JournalEntryResponse(BaseModel):
     journal_id: str
@@ -47,4 +47,4 @@ class JournalEntryResponse(BaseModel):
     lines: List[JournalLineResponse]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
