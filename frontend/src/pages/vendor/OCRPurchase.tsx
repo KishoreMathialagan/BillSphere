@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 
 interface OCRItem {
   name: string;
@@ -43,11 +43,9 @@ const OCRPurchase: React.FC = () => {
 
   const fetchDependencies = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const headers = { Authorization: `Bearer ${token}` };
       const [vRes, pRes] = await Promise.all([
-        axios.get('http://localhost:8000/api/v1/vendor', { headers }),
-        axios.get('http://localhost:8000/api/v1/inventory/products', { headers })
+        api.get('/vendor'),
+        api.get('/inventory/products')
       ]);
       setVendors(vRes.data);
       setProducts(pRes.data);
@@ -71,11 +69,9 @@ const OCRPurchase: React.FC = () => {
     formData.append('file', file);
     
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.post('http://localhost:8000/api/v1/vendor/ocr-extract', formData, {
+      const res = await api.post('/vendor/ocr-extract', formData, {
         headers: { 
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${token}` 
+          'Content-Type': 'multipart/form-data'
         }
       });
       setOcrData(res.data);
@@ -136,10 +132,7 @@ const OCRPurchase: React.FC = () => {
     };
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.post('http://localhost:8000/api/v1/vendor/purchase', payload, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.post('/vendor/purchase', payload);
       setSuccess(true);
       setOcrData(null);
       setFile(null);
