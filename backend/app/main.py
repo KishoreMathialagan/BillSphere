@@ -4,7 +4,21 @@ from app.db.session import engine, Base
 from fastapi.middleware.cors import CORSMiddleware
 from app.models import tenant, user, branch, inventory as inv_models, customer as cust_models, sales as sales_models, vendor as vendor_models, purchases as purchase_models
 
+from sqlalchemy import text
 Base.metadata.create_all(bind=engine)
+
+# Inline database migration: Ensure first_name and last_name columns exist in users table
+try:
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE users ADD COLUMN first_name VARCHAR"))
+except Exception:
+    pass
+
+try:
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE users ADD COLUMN last_name VARCHAR"))
+except Exception:
+    pass
 
 app = FastAPI(title="Bill Sphere API")
 
