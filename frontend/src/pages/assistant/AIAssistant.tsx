@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import api from '../../services/api';
 
 interface Message {
   id: string;
@@ -37,22 +38,8 @@ const AIAssistant: React.FC = () => {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8000/api/v1/assistant/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ query: userMessage.content })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to get response');
-      }
-
-      const data = await response.json();
-      const assistantMessage: Message = { id: Date.now().toString(), role: 'assistant', content: data.response };
+      const response = await api.post('/assistant/chat', { query: userMessage.content });
+      const assistantMessage: Message = { id: Date.now().toString(), role: 'assistant', content: response.data.response };
       setMessages(prev => [...prev, assistantMessage]);
     } catch (err: any) {
       const errorMessage: Message = { id: Date.now().toString(), role: 'assistant', content: `**Error:** ${err.message}` };

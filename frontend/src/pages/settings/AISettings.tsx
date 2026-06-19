@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 
 const AISettings: React.FC = () => {
   const [aiModel, setAiModel] = useState('qwen/qwen-2.5-7b-instruct');
@@ -12,10 +12,7 @@ const AISettings: React.FC = () => {
 
   const fetchConfig = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:8000/api/v1/setup/config', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await api.get('/setup/config');
       if (res.data.ai_model) {
         setAiModel(res.data.ai_model);
       }
@@ -28,11 +25,7 @@ const AISettings: React.FC = () => {
     setLoading(true);
     setMessage('');
     try {
-      const token = localStorage.getItem('token');
-      await axios.put('http://localhost:8000/api/v1/setup/config', 
-        { ai_model: aiModel },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await api.put('/setup/config', { ai_model: aiModel });
       setMessage('Settings saved successfully!');
     } catch (err) {
       setMessage('Failed to save settings.');

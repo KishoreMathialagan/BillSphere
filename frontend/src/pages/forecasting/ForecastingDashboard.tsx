@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
   BarChart, Bar
@@ -39,10 +39,7 @@ const ForecastingDashboard: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const headers = { Authorization: `Bearer ${token}` };
-      
-      const salesRes = await axios.get('http://localhost:8000/api/v1/forecasting/sales', { headers });
+      const salesRes = await api.get('/forecasting/sales');
       const hist = salesRes.data.historical;
       const fcast = salesRes.data.forecast;
       
@@ -51,7 +48,7 @@ const ForecastingDashboard: React.FC = () => {
       setSalesData(combined);
       setAvgDaily(salesRes.data.avg_daily_sales);
       
-      const invRes = await axios.get('http://localhost:8000/api/v1/forecasting/inventory-demand', { headers });
+      const invRes = await api.get('/forecasting/inventory-demand');
       setInventoryData(invRes.data);
       
     } catch (err) {

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { jwtDecode } from 'jwt-decode';
+import api from '../services/api';
 
 interface User {
   sub: string;
@@ -24,13 +25,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchTenantConfig = async (token: string) => {
     try {
-      const res = await fetch('http://localhost:8000/api/v1/setup/config', {
+      const res = await api.get('/setup/config', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      if (res.ok) {
-        const data = await res.json();
-        setTenantState(data.state || null);
-      }
+      setTenantState(res.data.state || null);
     } catch (e) {
       console.error(e);
     }
