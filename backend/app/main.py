@@ -57,4 +57,4 @@ def root():
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok"}
+    return {"status": "ok","API Version":"V1"}
