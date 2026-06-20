@@ -57,7 +57,7 @@ def root():
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok","API Version":"V1"}
+    return {"status": "ok","API Version":"V2"}
 
 from fastapi.responses import HTMLResponse
 from fastapi import Depends
