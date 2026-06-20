@@ -137,7 +137,7 @@ const Login: React.FC = () => {
                   value={email} 
                   onChange={e => setEmail(e.target.value)} 
                   required 
-                  placeholder="john.doe@example.com"
+                  placeholder="example@example.com"
                 />
                 <Mail size={18} className="input-icon" />
               </div>
