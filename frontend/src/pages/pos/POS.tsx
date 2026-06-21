@@ -23,6 +23,10 @@ const POS: React.FC = () => {
   const [scanning, setScanning] = useState(false);
   const html5QrCode = useRef<Html5Qrcode | null>(null);
 
+  // Manual Billing State
+  const [showManualBilling, setShowManualBilling] = useState(false);
+  const [manualItem, setManualItem] = useState({ name: '', price: 0, quantity: 1, taxRate: 0 });
+
   const { isOnline, forceSync, inventoryMode } = useSync();
   const { tenantState } = useAuth();
 
@@ -146,6 +150,26 @@ const POS: React.FC = () => {
     }
   };
 
+  const addManualItem = () => {
+    if (!manualItem.name || manualItem.price <= 0 || manualItem.quantity <= 0) {
+      alert("Please enter valid details for the manual item");
+      return;
+    }
+    const customProduct = {
+      variant_id: `manual-${Date.now()}`,
+      product_name: manualItem.name,
+      selling_price: manualItem.price,
+      tax_rate: manualItem.taxRate,
+      hsn_code: 'Custom',
+      quantity: manualItem.quantity,
+      discount: 0,
+      isManual: true,
+    };
+    setCart([...cart, customProduct]);
+    setShowManualBilling(false);
+    setManualItem({ name: '', price: 0, quantity: 1, taxRate: 0 });
+  };
+
   // Calculations
   const calcTotals = () => {
     let subtotal = 0;
@@ -187,10 +211,12 @@ const POS: React.FC = () => {
     // Strict Inventory Check
     if (inventoryMode === "Strict") {
       for (const item of cart) {
-        const qty = await getInventoryByVariant(item.variant_id);
-        if (qty < item.quantity) {
-          alert(`Out of Stock: Cannot sell ${item.quantity} of ${item.product_name}. Only ${qty} left locally.`);
-          return;
+        if (!item.isManual) {
+          const qty = await getInventoryByVariant(item.variant_id);
+          if (qty < item.quantity) {
+            alert(`Out of Stock: Cannot sell ${item.quantity} of ${item.product_name}. Only ${qty} left locally.`);
+            return;
+          }
         }
       }
     }
@@ -236,7 +262,9 @@ const POS: React.FC = () => {
       
       // Update local inventory to prevent double-selling offline
       for (const item of cart) {
-        await decrementInventoryLocal(item.variant_id, item.quantity);
+        if (!item.isManual) {
+          await decrementInventoryLocal(item.variant_id, item.quantity);
+        }
       }
 
       // Try background sync if online
@@ -310,8 +338,43 @@ const POS: React.FC = () => {
   const filteredProducts = products.filter(p => p.search_string.includes(search.toLowerCase()));
 
   return (
-    <div style={{ display: 'flex', height: 'calc(100vh - 40px)', gap: '20px', margin: '-10px', padding: '10px' }}>
+    <div style={{ display: 'flex', height: 'calc(100vh - 40px)', gap: '20px', margin: '-10px', padding: '10px', position: 'relative' }}>
       
+      {/* Manual Billing Modal */}
+      {showManualBilling && (
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: 'var(--bg)', padding: '24px', borderRadius: '12px', width: '400px', display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid var(--border)', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+            <h3 style={{ margin: 0, color: 'var(--text-h)' }}>Manual Entry</h3>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 600 }}>Item Name / Description</label>
+              <input type="text" value={manualItem.name} onChange={e => setManualItem({...manualItem, name: e.target.value})} style={{ padding: '10px', borderRadius: '6px', background: 'var(--code-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} placeholder="e.g. Custom Service" />
+            </div>
+            
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+                <label style={{ fontSize: '12px', fontWeight: 600 }}>Unit Price</label>
+                <input type="number" min="0" step="0.01" value={manualItem.price} onChange={e => setManualItem({...manualItem, price: Number(e.target.value)})} style={{ padding: '10px', borderRadius: '6px', background: 'var(--code-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+                <label style={{ fontSize: '12px', fontWeight: 600 }}>Quantity</label>
+                <input type="number" min="1" value={manualItem.quantity} onChange={e => setManualItem({...manualItem, quantity: Number(e.target.value)})} style={{ padding: '10px', borderRadius: '6px', background: 'var(--code-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 600 }}>Tax Rate (%)</label>
+              <input type="number" min="0" value={manualItem.taxRate} onChange={e => setManualItem({...manualItem, taxRate: Number(e.target.value)})} style={{ padding: '10px', borderRadius: '6px', background: 'var(--code-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+            </div>
+            
+            <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+              <button onClick={() => setShowManualBilling(false)} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text)', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
+              <button onClick={addManualItem} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', background: 'var(--accent)', color: 'white', cursor: 'pointer', fontWeight: 600 }}>Add to Cart</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Left Area: Catalog & Search */}
       <div style={{ flex: 6, display: 'flex', flexDirection: 'column', gap: '20px', background: 'var(--bg)', borderRadius: '12px', padding: '20px', border: '1px solid var(--border)', overflowY: 'auto' }}>
         <div style={{ display: 'flex', gap: '12px' }}>
@@ -324,9 +387,15 @@ const POS: React.FC = () => {
           />
           <button 
             onClick={() => setScanning(!scanning)}
-            style={{ padding: '0 20px', borderRadius: '8px', border: 'none', background: scanning ? '#ef4444' : 'var(--accent)', color: 'white', cursor: 'pointer', fontWeight: 600 }}
+            style={{ padding: '0 20px', borderRadius: '8px', border: 'none', background: scanning ? '#ef4444' : 'var(--accent)', color: 'white', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}
           >
             {scanning ? 'Cancel Scan' : '📷 Camera Scan'}
+          </button>
+          <button 
+            onClick={() => setShowManualBilling(true)}
+            style={{ padding: '0 20px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--code-bg)', color: 'var(--text-h)', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}
+          >
+            ✍️ Manual Entry
           </button>
         </div>
 

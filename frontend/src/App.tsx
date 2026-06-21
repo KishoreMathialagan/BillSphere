@@ -53,6 +53,8 @@ function App() {
               <Route path="/app/categories" element={<Categories />} />
               <Route path="/app/products" element={<Products />} />
               <Route path="/app/products/new" element={<ProductForm />} />
+              <Route path="/app/products/edit/:id" element={<ProductForm />} />
+              <Route path="/app/products/:id" element={<ProductForm isViewOnly={true} />} />
               <Route path="/app/inventory" element={<StockManagement />} />
               <Route path="/app/customers" element={<Customers />} />
               <Route path="/app/customers/:id" element={<CustomerDetail />} />

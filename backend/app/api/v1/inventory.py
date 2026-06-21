@@ -73,6 +73,60 @@ def get_products(db: Session = Depends(get_db), current_user: User = Depends(get
         ))
     return results
 
+@router.get("/products/{product_id}", response_model=ProductResponse)
+def get_product(product_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    product = db.query(Product).filter(Product.tenant_id == current_user.tenant_id, Product.product_id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    variants = db.query(ProductVariant).filter(ProductVariant.product_id == product_id).all()
+    return ProductResponse(
+        product_id=product.product_id, name=product.name, category_id=product.category_id,
+        hsn_code=product.hsn_code, tax_rate=product.tax_rate, variants=variants
+    )
+
+@router.put("/products/{product_id}", response_model=ProductResponse)
+def update_product(product_id: str, product_data: ProductCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    product = db.query(Product).filter(Product.tenant_id == current_user.tenant_id, Product.product_id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    
+    product.name = product_data.name
+    product.category_id = product_data.category_id
+    product.hsn_code = product_data.hsn_code
+    product.tax_rate = product_data.tax_rate
+    
+    db.query(ProductVariant).filter(ProductVariant.product_id == product_id).delete()
+    
+    db_variants = []
+    for var in product_data.variants:
+        db_variant = ProductVariant(
+            product_id=product_id,
+            barcode=var.barcode,
+            sku=var.sku,
+            purchase_price=var.purchase_price,
+            selling_price=var.selling_price
+        )
+        db.add(db_variant)
+        db_variants.append(db_variant)
+        
+    db.commit()
+    db.refresh(product)
+    return ProductResponse(
+        product_id=product.product_id, name=product.name, category_id=product.category_id,
+        hsn_code=product.hsn_code, tax_rate=product.tax_rate, variants=db_variants
+    )
+
+@router.delete("/products/{product_id}")
+def delete_product(product_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    product = db.query(Product).filter(Product.tenant_id == current_user.tenant_id, Product.product_id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    db.query(ProductVariant).filter(ProductVariant.product_id == product_id).delete()
+    db.delete(product)
+    db.commit()
+    return {"message": "Product deleted successfully"}
+
+
 @router.post("/adjust", response_model=InventoryResponse)
 def adjust_stock(adjustment: StockAdjustmentCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     inv = db.query(Inventory).filter(
