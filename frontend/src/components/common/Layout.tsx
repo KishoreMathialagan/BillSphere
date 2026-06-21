@@ -14,6 +14,7 @@ const Layout: React.FC = () => {
   };
 
   const menuItems = [
+    { path: '/app/settings/profile', label: 'My Profile', icon: '👤' },
     { path: '/app/dashboard', label: 'Dashboard', icon: '📊' },
     { path: '/app/pos', label: 'POS Terminal', icon: '🖥️' },
     { path: '/app/products', label: 'Products', icon: '📦' },
@@ -35,7 +36,6 @@ const Layout: React.FC = () => {
     { path: '/app/assistant', label: 'AI Advisor', icon: '✨' },
     { path: '/app/settings/ai', label: 'AI Configuration', icon: '🧠' },
     { path: '/app/settings/hardware', label: 'Hardware Settings', icon: '⚙️' },
-    { path: '/app/settings/profile', label: 'My Profile', icon: '👤' },
   ];
 
   // Get current page title
