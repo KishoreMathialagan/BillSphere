@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
 
 const Categories = () => {
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [name, setName] = useState('');
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const fetchData = async () => {

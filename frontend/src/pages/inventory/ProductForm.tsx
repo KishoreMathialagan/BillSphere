@@ -10,7 +10,7 @@ interface ProductFormProps {
 const ProductForm: React.FC<ProductFormProps> = ({ isViewOnly = false }) => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [product, setProduct] = useState({ name: '', category_id: '', hsn_code: '', tax_rate: 0 });
   const [variant, setVariant] = useState({ barcode: '', sku: '', purchase_price: 0, selling_price: 0 });
 
