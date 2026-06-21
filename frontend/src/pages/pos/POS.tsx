@@ -6,6 +6,9 @@ import { useSync } from '../../context/SyncContext';
 import { useAuth } from '../../context/AuthContext';
 import { useBarcodeScanner } from '../../hooks/useBarcodeScanner';
 import { hardwareService } from '../../services/HardwareService';
+import { NeuoCard } from '../../components/molecules/NeuoCard';
+import { Button } from '../../components/atoms/Button';
+import { Input } from '../../components/atoms/Input';
 
 const POS: React.FC = () => {
   const [products, setProducts] = useState<any[]>([]);
@@ -33,11 +36,8 @@ const POS: React.FC = () => {
   // Hardware Scanner Integration
   useBarcodeScanner({
     onScan: (barcode) => {
-      // Find product by barcode
       const match = products.find(p => p.barcode === barcode || p.sku === barcode);
       if (match) {
-        // We can't use addToCart directly here unless we wrap it in a ref or useCallback, 
-        // but since `cart` and `products` state closures could be stale, we use functional state updates.
         setCart(prevCart => {
           const existing = prevCart.find(i => i.variant_id === match.variant_id);
           if (existing) {
@@ -76,21 +76,16 @@ const POS: React.FC = () => {
 
   useEffect(() => {
     if (scanning) {
-      // Delay initialization slightly to ensure the #reader div is mounted
       setTimeout(() => {
         html5QrCode.current = new Html5Qrcode("reader");
         html5QrCode.current.start(
-          { facingMode: "environment" }, // Prefer back camera for smartphones
-          {
-            fps: 10,
-            qrbox: { width: 250, height: 150 }, // Wider for barcodes
-            aspectRatio: 1.0
-          },
+          { facingMode: "environment" }, 
+          { fps: 10, qrbox: { width: 250, height: 150 }, aspectRatio: 1.0 },
           onScanSuccess,
           onScanFailure
         ).catch(err => {
           console.error("Camera start error:", err);
-          alert("Could not start camera. Please ensure permissions are granted and you are using HTTPS on mobile.");
+          alert("Could not start camera.");
           setScanning(false);
         });
       }, 100);
@@ -103,7 +98,6 @@ const POS: React.FC = () => {
       }
     }
     
-    // Cleanup on unmount
     return () => {
       if (html5QrCode.current && html5QrCode.current.isScanning) {
         html5QrCode.current.stop().then(() => {
@@ -114,24 +108,18 @@ const POS: React.FC = () => {
   }, [scanning]);
 
   const onScanSuccess = (decodedText: string) => {
-    // Return barcode value to the billing screen's search input automatically
     setSearch(decodedText);
-    
-    // Search for product with this barcode
     const match = products.find(p => p.barcode === decodedText || p.sku === decodedText);
     if (match) {
       addToCart(match);
-      setScanning(false); // Stop scanning once successfully added
+      setScanning(false);
     } else {
-      // If not found, we keep the value in the search bar and notify
       alert(`Scanned Barcode: ${decodedText}. Product not found in catalog.`);
       setScanning(false);
     }
   };
 
-  const onScanFailure = () => {
-    // Handle or ignore
-  };
+  const onScanFailure = () => {};
 
   const addToCart = (variant: any) => {
     const existing = cart.find(i => i.variant_id === variant.variant_id);
@@ -170,7 +158,6 @@ const POS: React.FC = () => {
     setManualItem({ name: '', price: 0, quantity: 1, taxRate: 0 });
   };
 
-  // Calculations
   const calcTotals = () => {
     let subtotal = 0;
     let totalTax = 0;
@@ -208,7 +195,6 @@ const POS: React.FC = () => {
   const handleCheckout = async () => {
     if (cart.length === 0) return alert('Cart is empty');
     
-    // Strict Inventory Check
     if (inventoryMode === "Strict") {
       for (const item of cart) {
         if (!item.isManual) {
@@ -227,10 +213,10 @@ const POS: React.FC = () => {
         const itemTax = itemSubtotal * (item.tax_rate / 100);
         return {
           variant_id: item.variant_id,
-          product_name: item.product_name, // For PDF
+          product_name: item.product_name,
           quantity: item.quantity,
           unit_price: item.selling_price,
-          discount_amount: 0, // Item level discount not implemented in this UI for simplicity
+          discount_amount: 0,
           hsn_code: item.hsn_code,
           tax_rate: item.tax_rate,
           tax_amount: itemTax,
@@ -257,29 +243,24 @@ const POS: React.FC = () => {
         customer_id: customerId || null
       };
 
-      // Write to sync queue
       await enqueueInvoice(payload);
       
-      // Update local inventory to prevent double-selling offline
       for (const item of cart) {
         if (!item.isManual) {
           await decrementInventoryLocal(item.variant_id, item.quantity);
         }
       }
 
-      // Try background sync if online
       if (isOnline) {
         forceSync();
       }
 
-      // Save to state to show sharing options
       const custObj = customers.find(c => c.customer_id === customerId) || null;
       setCompletedInvoice({
         invoice: { ...payload, items: itemsPayload },
         customer: custObj
       });
       
-      // Auto pop cash drawer if payment received
       if (amountPaid > 0) {
         hardwareService.openCashDrawer().catch(() => {});
       }
@@ -288,293 +269,214 @@ const POS: React.FC = () => {
     }
   };
 
-  const handleNewSale = () => {
-    setCart([]);
-    setAmountPaid(0);
-    setDiscountPercent(0);
-    setCustomerId('');
-    setCompletedInvoice(null);
-  };
-
   const handleDownloadPDF = () => {
     if (!completedInvoice) return;
-    generateInvoicePDF(completedInvoice.invoice, completedInvoice.customer, { name: 'My Retail Store' });
-  };
-
-  const handlePrintReceipt = async () => {
-    try {
-      await hardwareService.printTestReceipt(); // We can implement a real receipt printer later, for now we just test connection
-    } catch (err: any) {
-      alert("Hardware error: " + err.message);
-    }
-  };
-
-  const handlePopDrawer = async () => {
-    try {
-      await hardwareService.openCashDrawer();
-    } catch (err: any) {
-      alert("Hardware error: " + err.message);
-    }
-  };
-
-  const handleWhatsAppShare = () => {
-    if (!completedInvoice) return;
-    const { invoice, customer } = completedInvoice;
-    const text = `Hello${customer ? ' ' + customer.name : ''}, your invoice ${invoice.invoice_number} for $${invoice.total_amount.toFixed(2)} is ready!`;
-    const phone = customer?.phone ? customer.phone.replace(/[^0-9]/g, '') : '';
-    const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
-    window.open(url, '_blank');
-  };
-
-  const handleEmailShare = () => {
-    if (!completedInvoice) return;
-    const { invoice, customer } = completedInvoice;
-    const subject = `Invoice ${invoice.invoice_number} from My Retail Store`;
-    const body = `Hello${customer ? ' ' + customer.name : ''},\n\nYour invoice ${invoice.invoice_number} for $${invoice.total_amount.toFixed(2)} has been generated.\n\nThank you for your business!`;
-    const url = `mailto:${customer?.email || ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.open(url, '_blank');
+    generateInvoicePDF(completedInvoice.invoice, completedInvoice.customer, { name: 'Vendor Mind' });
   };
 
   const filteredProducts = products.filter(p => p.search_string.includes(search.toLowerCase()));
 
   return (
-    <div style={{ display: 'flex', height: 'calc(100vh - 40px)', gap: '20px', margin: '-10px', padding: '10px', position: 'relative' }}>
+    <div style={{ display: 'flex', gap: 'var(--space-6)', height: 'calc(100vh - 120px)' }}>
       
       {/* Manual Billing Modal */}
       {showManualBilling && (
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: 'var(--bg)', padding: '24px', borderRadius: '12px', width: '400px', display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid var(--border)', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
-            <h3 style={{ margin: 0, color: 'var(--text-h)' }}>Manual Entry</h3>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <NeuoCard style={{ width: '400px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <h3 className="heading-3">Manual Entry</h3>
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '12px', fontWeight: 600 }}>Item Name / Description</label>
-              <input type="text" value={manualItem.name} onChange={e => setManualItem({...manualItem, name: e.target.value})} style={{ padding: '10px', borderRadius: '6px', background: 'var(--code-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} placeholder="e.g. Custom Service" />
-            </div>
+            <Input 
+              label="Item Name / Description" 
+              value={manualItem.name} 
+              onChange={e => setManualItem({...manualItem, name: e.target.value})} 
+              placeholder="e.g. Custom Service" 
+            />
             
             <div style={{ display: 'flex', gap: '12px' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
-                <label style={{ fontSize: '12px', fontWeight: 600 }}>Unit Price</label>
-                <input type="number" min="0" step="0.01" value={manualItem.price} onChange={e => setManualItem({...manualItem, price: Number(e.target.value)})} style={{ padding: '10px', borderRadius: '6px', background: 'var(--code-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
-                <label style={{ fontSize: '12px', fontWeight: 600 }}>Quantity</label>
-                <input type="number" min="1" value={manualItem.quantity} onChange={e => setManualItem({...manualItem, quantity: Number(e.target.value)})} style={{ padding: '10px', borderRadius: '6px', background: 'var(--code-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} />
-              </div>
+              <Input 
+                type="number" min="0" step="0.01" label="Unit Price" 
+                value={manualItem.price} 
+                onChange={e => setManualItem({...manualItem, price: Number(e.target.value)})} 
+              />
+              <Input 
+                type="number" min="1" label="Quantity" 
+                value={manualItem.quantity} 
+                onChange={e => setManualItem({...manualItem, quantity: Number(e.target.value)})} 
+              />
             </div>
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <label style={{ fontSize: '12px', fontWeight: 600 }}>Tax Rate (%)</label>
-              <input type="number" min="0" value={manualItem.taxRate} onChange={e => setManualItem({...manualItem, taxRate: Number(e.target.value)})} style={{ padding: '10px', borderRadius: '6px', background: 'var(--code-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} />
-            </div>
+            <Input 
+              type="number" min="0" label="Tax Rate (%)" 
+              value={manualItem.taxRate} 
+              onChange={e => setManualItem({...manualItem, taxRate: Number(e.target.value)})} 
+            />
             
             <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-              <button onClick={() => setShowManualBilling(false)} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text)', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
-              <button onClick={addManualItem} style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', background: 'var(--accent)', color: 'white', cursor: 'pointer', fontWeight: 600 }}>Add to Cart</button>
+              <Button variant="ghost" onClick={() => setShowManualBilling(false)} style={{ flex: 1 }}>Cancel</Button>
+              <Button variant="filled" onClick={addManualItem} style={{ flex: 1 }}>Add to Cart</Button>
             </div>
-          </div>
+          </NeuoCard>
         </div>
       )}
 
-      {/* Left Area: Catalog & Search */}
-      <div style={{ flex: 6, display: 'flex', flexDirection: 'column', gap: '20px', background: 'var(--bg)', borderRadius: '12px', padding: '20px', border: '1px solid var(--border)', overflowY: 'auto' }}>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <input 
-            type="text" 
-            placeholder="Search products by name, SKU, or Barcode..." 
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            style={{ flexGrow: 1, padding: '14px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--code-bg)', color: 'var(--text-h)' }}
-          />
-          <button 
+      {/* Left Area: Catalog & Search (70%) */}
+      <div style={{ flex: 7, display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-4)' }}>
+          <div style={{ flexGrow: 1 }}>
+            <Input 
+              placeholder="Search products by name, SKU, or Barcode..." 
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              leftIcon={<span>🔍</span>}
+            />
+          </div>
+          <Button 
+            variant={scanning ? 'danger' : 'neuo'} 
             onClick={() => setScanning(!scanning)}
-            style={{ padding: '0 20px', borderRadius: '8px', border: 'none', background: scanning ? '#ef4444' : 'var(--accent)', color: 'white', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}
           >
-            {scanning ? 'Cancel Scan' : '📷 Camera Scan'}
-          </button>
-          <button 
-            onClick={() => setShowManualBilling(true)}
-            style={{ padding: '0 20px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--code-bg)', color: 'var(--text-h)', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}
-          >
+            {scanning ? 'Cancel Scan' : '📷 Camera'}
+          </Button>
+          <Button variant="neuo" onClick={() => setShowManualBilling(true)}>
             ✍️ Manual Entry
-          </button>
+          </Button>
         </div>
 
         {scanning && (
-          <div style={{ background: '#000', borderRadius: '8px', overflow: 'hidden' }}>
+          <div style={{ background: '#000', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
             <div id="reader" style={{ width: '100%' }}></div>
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 'var(--space-4)', overflowY: 'auto', padding: 'var(--space-2)' }}>
           {filteredProducts.slice(0, 50).map((p, i) => (
-            <div 
+            <NeuoCard 
               key={i} 
               onClick={() => addToCart(p)}
-              style={{ padding: '16px', background: 'var(--code-bg)', border: '1px solid var(--border)', borderRadius: '8px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '8px' }}
+              style={{ cursor: 'pointer', transition: 'transform 0.1s', display: 'flex', flexDirection: 'column', gap: '8px', padding: 'var(--space-4)' }}
             >
-              <h4 style={{ margin: 0, fontSize: '14px', color: 'var(--text-h)' }}>{p.product_name}</h4>
-              <span style={{ fontSize: '12px', opacity: 0.7 }}>SKU: {p.sku || 'N/A'}</span>
-              <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--accent)' }}>${p.selling_price.toFixed(2)}</span>
-            </div>
+              <h4 className="body" style={{ margin: 0, fontWeight: 600 }}>{p.product_name}</h4>
+              <span className="body-sm" style={{ opacity: 0.7 }}>SKU: {p.sku || 'N/A'}</span>
+              <span className="metric-md" style={{ color: 'var(--color-cyprus)' }}>₹{p.selling_price.toFixed(2)}</span>
+            </NeuoCard>
           ))}
         </div>
       </div>
 
-      {/* Right Area: Cart & Checkout / Sharing */}
-      <div style={{ flex: 4, display: 'flex', flexDirection: 'column', background: 'var(--code-bg)', borderRadius: '12px', padding: '20px', border: '1px solid var(--border)' }}>
+      {/* Right Area: Cart & Checkout (30%) */}
+      <NeuoCard style={{ flex: 3, display: 'flex', flexDirection: 'column', padding: '0', overflow: 'hidden' }}>
         
         {completedInvoice ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '20px', textAlign: 'center' }}>
-            <div style={{ fontSize: '48px' }}>🎉</div>
-            <h2 style={{ margin: 0, color: '#10b981' }}>Sale Completed!</h2>
-            <p style={{ opacity: 0.7, margin: 0 }}>Invoice {completedInvoice.invoice.invoice_number} generated successfully.</p>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 'var(--space-6)', textAlign: 'center' }}>
+            <div style={{ fontSize: '48px', marginBottom: 'var(--space-4)' }}>🎉</div>
+            <h2 className="heading-2" style={{ color: 'var(--color-success)', marginBottom: 'var(--space-2)' }}>Sale Completed!</h2>
+            <p className="body" style={{ opacity: 0.7, marginBottom: 'var(--space-6)' }}>Invoice {completedInvoice.invoice.invoice_number} generated successfully.</p>
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', marginTop: '20px' }}>
-              <button 
-                onClick={handleDownloadPDF}
-                style={{ padding: '14px', borderRadius: '8px', background: 'var(--accent)', color: 'white', border: 'none', fontWeight: 600, cursor: 'pointer', display: 'flex', justifyContent: 'center', gap: '8px' }}
-              >
-                📄 Download PDF
-              </button>
-              
-              <button 
-                onClick={handlePrintReceipt}
-                style={{ padding: '14px', borderRadius: '8px', background: 'var(--text-h)', color: 'var(--bg)', border: 'none', fontWeight: 600, cursor: 'pointer', display: 'flex', justifyContent: 'center', gap: '8px' }}
-              >
-                🖨️ Thermal Print Receipt
-              </button>
-              
-              <button 
-                onClick={handlePopDrawer}
-                style={{ padding: '14px', borderRadius: '8px', background: 'var(--code-bg)', color: 'var(--text)', border: '1px solid var(--border)', fontWeight: 600, cursor: 'pointer', display: 'flex', justifyContent: 'center', gap: '8px' }}
-              >
-                💵 Pop Cash Drawer
-              </button>
-              
-              <button 
-                onClick={handleWhatsAppShare}
-                style={{ padding: '14px', borderRadius: '8px', background: '#25D366', color: 'white', border: 'none', fontWeight: 600, cursor: 'pointer', display: 'flex', justifyContent: 'center', gap: '8px' }}
-              >
-                💬 Share via WhatsApp
-              </button>
-              
-              <button 
-                onClick={handleEmailShare}
-                style={{ padding: '14px', borderRadius: '8px', background: '#ea4335', color: 'white', border: 'none', fontWeight: 600, cursor: 'pointer', display: 'flex', justifyContent: 'center', gap: '8px' }}
-              >
-                ✉️ Share via Email
-              </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', width: '100%' }}>
+              <Button variant="filled" onClick={handleDownloadPDF}>📄 Download PDF</Button>
+              <Button variant="neuo" onClick={() => hardwareService.printTestReceipt().catch(e => alert(e))}>🖨️ Thermal Receipt</Button>
+              <Button variant="neuo" onClick={() => hardwareService.openCashDrawer().catch(e => alert(e))}>💵 Pop Drawer</Button>
+              <Button variant="neuo" onClick={() => setCompletedInvoice(null)}>➕ Start New Sale</Button>
             </div>
-            
-            <button 
-              onClick={handleNewSale}
-              style={{ padding: '14px', borderRadius: '8px', background: 'transparent', color: 'var(--text-h)', border: '1px solid var(--border)', fontWeight: 600, cursor: 'pointer', width: '100%', marginTop: '20px' }}
-            >
-              ➕ Start New Sale
-            </button>
           </div>
         ) : (
-          <>
-            <h2 style={{ margin: '0 0 20px', fontSize: '20px', color: 'var(--text-h)' }}>Current Cart</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+            <div style={{ padding: 'var(--space-4)', borderBottom: '1px solid var(--color-sand-dark)' }}>
+              <h2 className="heading-3" style={{ margin: 0 }}>Current Cart</h2>
+            </div>
             
-            <div style={{ flexGrow: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ flexGrow: 1, overflowY: 'auto', padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
               {cart.length === 0 ? (
-                <div style={{ textAlign: 'center', opacity: 0.5, marginTop: '40px' }}>Cart is empty</div>
+                <div style={{ textAlign: 'center', opacity: 0.5, marginTop: '40px' }} className="body">Cart is empty</div>
               ) : (
-            cart.map(item => (
-              <div key={item.variant_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'var(--bg)', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                <div style={{ flexGrow: 1 }}>
-                  <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-h)' }}>{item.product_name}</div>
-                  <div style={{ fontSize: '12px', opacity: 0.7 }}>${item.selling_price.toFixed(2)} + {item.tax_rate}% GST</div>
+                cart.map(item => (
+                  <div key={item.variant_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 'var(--space-3)', background: 'rgba(255,255,255,0.4)', borderRadius: 'var(--radius-md)' }}>
+                    <div style={{ flexGrow: 1 }}>
+                      <div className="body" style={{ fontWeight: 600 }}>{item.product_name}</div>
+                      <div className="body-sm" style={{ opacity: 0.7 }}>₹{item.selling_price.toFixed(2)}</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                      <input 
+                        type="number" 
+                        value={item.quantity} 
+                        onChange={e => updateCartQty(item.variant_id, Number(e.target.value))}
+                        style={{ width: '50px', padding: '4px', borderRadius: '4px', border: '1px solid var(--color-sand-dark)', background: 'var(--color-sand)', textAlign: 'center' }}
+                      />
+                      <div className="body" style={{ fontWeight: 600, width: '60px', textAlign: 'right' }}>
+                        ₹{(item.quantity * item.selling_price).toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div style={{ padding: 'var(--space-4)', background: 'var(--color-sand-dark)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }} className="body">
+                  <span style={{ opacity: 0.7 }}>Subtotal</span>
+                  <span style={{ fontWeight: 600 }}>₹{subtotal.toFixed(2)}</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {totalTax > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }} className="body">
+                    <span style={{ opacity: 0.7 }}>Tax</span>
+                    <span style={{ fontWeight: 600 }}>₹{totalTax.toFixed(2)}</span>
+                  </div>
+                )}
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'var(--space-2)' }} className="body">
+                  <span style={{ opacity: 0.7 }}>Discount (%)</span>
                   <input 
                     type="number" 
-                    value={item.quantity} 
-                    onChange={e => updateCartQty(item.variant_id, Number(e.target.value))}
-                    style={{ width: '60px', padding: '6px', borderRadius: '4px', border: '1px solid var(--border)', background: 'var(--code-bg)', color: 'var(--text)' }}
+                    value={discountPercent} 
+                    onChange={e => setDiscountPercent(Number(e.target.value))} 
+                    style={{ width: '60px', padding: '4px', textAlign: 'right', background: 'var(--color-sand)', border: 'none', borderRadius: '4px', boxShadow: 'var(--shadow-neuo-inset)' }} 
                   />
-                  <div style={{ fontWeight: 600, width: '70px', textAlign: 'right' }}>
-                    ${(item.quantity * item.selling_price).toFixed(2)}
+                </div>
+                
+                <div style={{ borderTop: '1px dashed rgba(0,0,0,0.1)', margin: 'var(--space-2) 0' }}></div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span className="heading-3">Total</span>
+                  <span className="metric-md" style={{ color: 'var(--color-cyprus)' }}>₹{totalAmount.toFixed(2)}</span>
+                </div>
+
+                <div style={{ marginTop: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                  <div>
+                    <label className="body-sm" style={{ fontWeight: 600, display: 'block', marginBottom: '4px' }}>Customer</label>
+                    <select 
+                      value={customerId} 
+                      onChange={e => setCustomerId(e.target.value)}
+                      style={{ width: '100%', padding: '8px', borderRadius: 'var(--radius-md)', background: 'var(--color-sand)', border: 'none', boxShadow: 'var(--shadow-neuo-inset)' }}
+                    >
+                      <option value="">Walk-In Customer</option>
+                      {customers.map(c => <option key={c.customer_id} value={c.customer_id}>{c.name}</option>)}
+                    </select>
                   </div>
+                  <div>
+                    <label className="body-sm" style={{ fontWeight: 600, display: 'block', marginBottom: '4px' }}>Amount Received (₹)</label>
+                    <Input 
+                      type="number" 
+                      value={amountPaid || ''} 
+                      onChange={e => setAmountPaid(Number(e.target.value))}
+                      placeholder="0.00"
+                    />
+                  </div>
+
+                  <Button 
+                    variant="filled" 
+                    size="lg"
+                    onClick={handleCheckout}
+                    disabled={cart.length === 0}
+                    style={{ marginTop: 'var(--space-2)', width: '100%' }}
+                  >
+                    Checkout
+                  </Button>
                 </div>
               </div>
-            ))
-          )}
-        </div>
-
-        <div style={{ borderTop: '2px dashed var(--border)', marginTop: '20px', paddingTop: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-            <span>Subtotal</span>
-            <span>${subtotal.toFixed(2)}</span>
-          </div>
-          {isInterState ? (
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-              <span>IGST ({placeOfSupply})</span>
-              <span>+ ${totalIgst.toFixed(2)}</span>
             </div>
-          ) : (
-            <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                <span>CGST</span>
-                <span>+ ${totalCgst.toFixed(2)}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                <span>SGST ({placeOfSupply})</span>
-                <span>+ ${totalSgst.toFixed(2)}</span>
-              </div>
-            </>
-          )}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '14px' }}>
-            <span>Global Discount (%)</span>
-            <input 
-              type="number" 
-              value={discountPercent} 
-              onChange={e => setDiscountPercent(Number(e.target.value))} 
-              style={{ width: '60px', padding: '4px', textAlign: 'right', background: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: '4px' }} 
-            />
           </div>
-          
-          <div style={{ borderTop: '1px solid var(--border)', margin: '4px 0' }}></div>
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '20px', fontWeight: 700, color: 'var(--text-h)' }}>
-            <span>Grand Total</span>
-            <span>${totalAmount.toFixed(2)}</span>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
-            <label style={{ fontSize: '12px', fontWeight: 600 }}>Link Customer (Optional)</label>
-            <select 
-              value={customerId} 
-              onChange={e => setCustomerId(e.target.value)}
-              style={{ padding: '10px', borderRadius: '6px', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)' }}
-            >
-              <option value="">Walk-In Customer</option>
-              {customers.map(c => <option key={c.customer_id} value={c.customer_id}>{c.name}</option>)}
-            </select>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ fontSize: '12px', fontWeight: 600 }}>Amount Received</label>
-            <input 
-              type="number" 
-              value={amountPaid} 
-              onChange={e => setAmountPaid(Number(e.target.value))}
-              style={{ padding: '10px', borderRadius: '6px', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)' }}
-            />
-          </div>
-
-          <button 
-            onClick={handleCheckout}
-            disabled={cart.length === 0}
-            style={{ marginTop: '12px', padding: '16px', borderRadius: '8px', background: '#10b981', color: 'white', border: 'none', fontWeight: 700, fontSize: '16px', cursor: cart.length === 0 ? 'not-allowed' : 'pointer', opacity: cart.length === 0 ? 0.5 : 1 }}
-          >
-            Checkout
-          </button>
-        </div>
-      </>
-      )}
-      </div>
+        )}
+      </NeuoCard>
     </div>
   );
 };

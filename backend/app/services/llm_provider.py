@@ -24,7 +24,7 @@ class OpenRouterProvider(LLMProvider):
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "HTTP-Referer": "http://localhost:3000", # Required by OpenRouter
-            "X-Title": "Bill Sphere",
+            "X-Title": "Vendor Mind",
             "Content-Type": "application/json"
         }
 

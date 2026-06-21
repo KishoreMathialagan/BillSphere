@@ -2,6 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import CustomerForm from './CustomerForm';
+import { NeuoCard } from '../../components/molecules/NeuoCard';
+import { Button } from '../../components/atoms/Button';
+import { Input } from '../../components/atoms/Input';
+import { Badge } from '../../components/atoms/Badge';
 
 const Customers: React.FC = () => {
   const [customers, setCustomers] = useState<any[]>([]);
@@ -41,207 +45,118 @@ const Customers: React.FC = () => {
     }
   };
 
-  // Filter customers by search term
   const filteredCustomers = customers.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
     (c.phone && c.phone.includes(search)) ||
     (c.email && c.email.toLowerCase().includes(search.toLowerCase()))
   );
 
-  // Compute metrics
   const totalCustomers = customers.length;
   const totalOutstanding = customers.reduce((sum, c) => sum + (c.outstanding_balance || 0), 0);
   const creditAccounts = customers.filter(c => (c.outstanding_balance || 0) > 0).length;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', textAlign: 'left' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
       
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h2 className="heading-2">Customers</h2>
+          <p className="body" style={{ color: 'var(--color-night-60)' }}>Manage customer accounts, outstanding balances, and credit limits.</p>
+        </div>
+        <Button variant="filled" onClick={() => setIsModalOpen(true)}>
+          👥 Add Customer
+        </Button>
+      </div>
+
       {/* Metrics Row */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-        gap: '20px',
-      }}>
-        {[
-          { label: 'Total Customers', value: totalCustomers, icon: '👥', color: 'var(--accent)' },
-          { label: 'Outstanding Balance', value: `$${totalOutstanding.toFixed(2)}`, icon: '💰', color: '#ef4444' },
-          { label: 'Active Credit Accounts', value: creditAccounts, icon: '💳', color: '#f59e0b' },
-        ].map((stat, idx) => (
-          <div
-            key={idx}
-            style={{
-              background: 'var(--code-bg)',
-              borderRadius: '12px',
-              padding: '24px',
-              border: '1px solid var(--border)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
-            }}
-          >
-            <div>
-              <span style={{ fontSize: '13px', fontWeight: 600, opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                {stat.label}
-              </span>
-              <h3 style={{
-                margin: '8px 0 0',
-                fontSize: '28px',
-                fontWeight: 700,
-                color: 'var(--text-h)'
-              }}>
-                {loading ? '...' : stat.value}
-              </h3>
-            </div>
-            <div style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '10px',
-              background: 'var(--bg)',
-              border: '1px solid var(--border)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '24px'
-            }}>
-              {stat.icon}
-            </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-6)' }}>
+        <NeuoCard>
+          <div className="data-label" style={{ color: 'var(--color-night-60)', marginBottom: 'var(--space-2)' }}>Total Customers</div>
+          <div className="metric-lg" style={{ color: 'var(--color-cyprus)' }}>
+            {loading ? '--' : totalCustomers}
           </div>
-        ))}
+        </NeuoCard>
+        
+        <NeuoCard>
+          <div className="data-label" style={{ color: 'var(--color-night-60)', marginBottom: 'var(--space-2)' }}>Outstanding Balance</div>
+          <div className="metric-lg" style={{ color: 'var(--color-danger)' }}>
+            {loading ? '--' : `₹${totalOutstanding.toFixed(2)}`}
+          </div>
+        </NeuoCard>
+        
+        <NeuoCard>
+          <div className="data-label" style={{ color: 'var(--color-night-60)', marginBottom: 'var(--space-2)' }}>Active Credit Accounts</div>
+          <div className="metric-lg" style={{ color: 'var(--color-warning)' }}>
+            {loading ? '--' : creditAccounts}
+          </div>
+        </NeuoCard>
       </div>
 
       {/* Main Table Actions Section */}
-      <div style={{
-        background: 'var(--bg)',
-        borderRadius: '12px',
-        border: '1px solid var(--border)',
-        padding: '24px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '20px'
-      }}>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: '16px',
-          flexWrap: 'wrap'
-        }}>
-          {/* Search bar */}
-          <div style={{ position: 'relative', flexGrow: 1, maxWidth: '400px' }}>
-            <input
-              type="text"
-              placeholder="🔍 Search customers by name, phone or email..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                borderRadius: '8px',
-                border: '1px solid var(--border)',
-                background: 'var(--code-bg)',
-                color: 'var(--text-h)',
-                boxSizing: 'border-box',
-                fontSize: '14px'
-              }}
-            />
-          </div>
-
-          <button
-            onClick={() => setIsModalOpen(true)}
-            style={{
-              padding: '12px 20px',
-              borderRadius: '8px',
-              border: 'none',
-              background: 'var(--accent)',
-              color: 'white',
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: '14px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              boxShadow: '0 4px 12px var(--accent-bg)',
-              transition: 'transform 0.2s ease',
-            }}
-            onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
-            onMouseOut={(e) => e.currentTarget.style.transform = 'none'}
-          >
-            👥 Add Customer
-          </button>
+      <NeuoCard style={{ padding: 0, overflow: 'hidden' }}>
+        <div style={{ padding: 'var(--space-4)', borderBottom: '1px solid var(--color-sand-dark)' }}>
+          <Input
+            placeholder="Search customers by name, phone or email..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            leftIcon={<span>🔍</span>}
+            style={{ maxWidth: '400px' }}
+          />
         </div>
 
         {/* Customer Listing */}
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '40px', opacity: 0.6 }}>Loading customer registry...</div>
+          <div style={{ textAlign: 'center', padding: 'var(--space-8)', opacity: 0.6 }} className="body">Loading customer registry...</div>
         ) : filteredCustomers.length === 0 ? (
-          <div style={{
-            textAlign: 'center',
-            padding: '60px 40px',
-            border: '1px dashed var(--border)',
-            borderRadius: '8px',
-            opacity: 0.8
-          }}>
-            <span style={{ fontSize: '40px', display: 'block', marginBottom: '12px' }}>👥</span>
-            <strong>No customers found</strong>
-            <p style={{ fontSize: '13px', marginTop: '4px', opacity: 0.7 }}>
-              {search ? 'Try adjusting your search criteria.' : 'Start adding customer accounts to manage outstanding bills and credit bounds.'}
-            </p>
+          <div style={{ textAlign: 'center', padding: 'var(--space-10)', opacity: 0.5 }}>
+            <div style={{ fontSize: '48px', marginBottom: 'var(--space-4)' }}>👥</div>
+            <p className="body">No customers found.</p>
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left' }}>
-                  <th style={{ padding: '16px 12px', fontWeight: 600, color: 'var(--text-h)' }}>Customer Name</th>
-                  <th style={{ padding: '16px 12px', fontWeight: 600, color: 'var(--text-h)' }}>Phone</th>
-                  <th style={{ padding: '16px 12px', fontWeight: 600, color: 'var(--text-h)' }}>Email</th>
-                  <th style={{ padding: '16px 12px', fontWeight: 600, color: 'var(--text-h)' }}>GSTIN</th>
-                  <th style={{ padding: '16px 12px', fontWeight: 600, color: 'var(--text-h)', textAlign: 'right' }}>Credit Limit</th>
-                  <th style={{ padding: '16px 12px', fontWeight: 600, color: 'var(--text-h)', textAlign: 'right' }}>Outstanding</th>
-                  <th style={{ padding: '16px 12px', fontWeight: 600, color: 'var(--text-h)', textAlign: 'center' }}>Action</th>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead style={{ background: 'var(--color-cyprus-glass)', borderBottom: '1px solid var(--color-sand-dark)' }}>
+                <tr>
+                  <th className="data-label" style={{ padding: 'var(--space-4)', color: 'var(--color-cyprus)' }}>Customer Name</th>
+                  <th className="data-label" style={{ padding: 'var(--space-4)', color: 'var(--color-cyprus)' }}>Contact</th>
+                  <th className="data-label" style={{ padding: 'var(--space-4)', color: 'var(--color-cyprus)' }}>GSTIN</th>
+                  <th className="data-label" style={{ padding: 'var(--space-4)', color: 'var(--color-cyprus)', textAlign: 'right' }}>Credit Limit</th>
+                  <th className="data-label" style={{ padding: 'var(--space-4)', color: 'var(--color-cyprus)', textAlign: 'right' }}>Outstanding</th>
+                  <th className="data-label" style={{ padding: 'var(--space-4)', color: 'var(--color-cyprus)', textAlign: 'right' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredCustomers.map((cust) => (
                   <tr
                     key={cust.customer_id}
-                    style={{
-                      borderBottom: '1px solid var(--border)',
-                      cursor: 'pointer',
-                      transition: 'background-color 0.2s ease',
-                    }}
-                    className="customer-row"
+                    style={{ borderBottom: '1px solid var(--color-sand-dark)', cursor: 'pointer', transition: 'background-color 0.2s ease' }}
                     onClick={() => navigate(`/app/customers/${cust.customer_id}`)}
+                    className="hover-row"
                   >
-                    <td style={{ padding: '16px 12px', fontWeight: 600, color: 'var(--text-h)' }}>{cust.name}</td>
-                    <td style={{ padding: '16px 12px' }}>{cust.phone || '—'}</td>
-                    <td style={{ padding: '16px 12px' }}>{cust.email || '—'}</td>
-                    <td style={{ padding: '16px 12px', fontFamily: 'var(--mono)', fontSize: '12px' }}>{cust.gst_number || '—'}</td>
-                    <td style={{ padding: '16px 12px', textAlign: 'right' }}>${cust.credit_limit.toFixed(2)}</td>
-                    <td style={{
-                      padding: '16px 12px',
-                      textAlign: 'right',
-                      fontWeight: cust.outstanding_balance > 0 ? 600 : 'normal',
-                      color: cust.outstanding_balance > 0 ? '#ef4444' : 'inherit'
-                    }}>
-                      ${cust.outstanding_balance.toFixed(2)}
+                    <td style={{ padding: 'var(--space-4)' }}>
+                      <div className="body" style={{ fontWeight: 600 }}>{cust.name}</div>
                     </td>
-                    <td style={{ padding: '16px 12px', textAlign: 'center' }}>
-                      <button
-                        style={{
-                          padding: '6px 12px',
-                          borderRadius: '6px',
-                          border: '1px solid var(--border)',
-                          background: 'var(--code-bg)',
-                          color: 'var(--text-h)',
-                          fontSize: '12px',
-                          fontWeight: 500,
-                          cursor: 'pointer'
-                        }}
-                      >
+                    <td style={{ padding: 'var(--space-4)' }}>
+                      <div className="body-sm">{cust.phone || '—'}</div>
+                      <div className="body-sm" style={{ opacity: 0.7 }}>{cust.email || '—'}</div>
+                    </td>
+                    <td style={{ padding: 'var(--space-4)' }}>
+                      <span className="body-sm" style={{ fontFamily: 'var(--font-mono)' }}>{cust.gst_number || '—'}</span>
+                    </td>
+                    <td style={{ padding: 'var(--space-4)', textAlign: 'right' }} className="body">
+                      ₹{cust.credit_limit.toFixed(2)}
+                    </td>
+                    <td style={{ padding: 'var(--space-4)', textAlign: 'right' }}>
+                      {cust.outstanding_balance > 0 ? (
+                        <Badge variant="danger">₹{cust.outstanding_balance.toFixed(2)}</Badge>
+                      ) : (
+                        <span className="body" style={{ color: 'var(--color-night-40)' }}>₹0.00</span>
+                      )}
+                    </td>
+                    <td style={{ padding: 'var(--space-4)', textAlign: 'right' }}>
+                      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/app/customers/${cust.customer_id}`); }}>
                         View Profile →
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -249,43 +164,28 @@ const Customers: React.FC = () => {
             </table>
           </div>
         )}
-      </div>
+      </NeuoCard>
 
-      {/* CSS overrides for hover states */}
-      <style dangerouslySetInnerHTML={{__html: `
-        .customer-row:hover {
-          background-color: var(--code-bg) !important;
+      <style>{`
+        .hover-row:hover {
+          background-color: var(--color-cyprus-tint);
         }
-      `}} />
+      `}</style>
 
       {/* Create Customer Dialog Modal */}
       {isModalOpen && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(0,0,0,0.5)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 100,
-          padding: '20px'
-        }}>
-          <div style={{
-            background: 'var(--bg)',
-            borderRadius: '16px',
-            border: '1px solid var(--border)',
-            padding: '32px',
-            width: '100%',
-            maxWidth: '550px',
-            boxShadow: 'var(--shadow)'
-          }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '20px' }}>
+          <NeuoCard style={{ width: '100%', maxWidth: '550px', padding: 'var(--space-6)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)' }}>
+              <h3 className="heading-3" style={{ margin: 0 }}>Add New Customer</h3>
+              <Button variant="ghost" size="sm" onClick={() => setIsModalOpen(false)}>✕</Button>
+            </div>
             <CustomerForm
               onSubmit={handleCreateCustomer}
               onCancel={() => setIsModalOpen(false)}
               isSubmitting={submitting}
             />
-          </div>
+          </NeuoCard>
         </div>
       )}
 

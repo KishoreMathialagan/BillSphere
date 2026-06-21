@@ -58,7 +58,7 @@ def generate_business_context(db: Session, tenant_id: str) -> str:
 
     # Build prompt
     context = f"""
-You are the AI Business Assistant for "Bill Sphere Retail OS". 
+You are the AI Business Assistant for "Vendor Mind Retail OS". 
 You provide intelligent insights, inventory suggestions, and profit advice based on real-time business data.
 
 Here is the current context for this business:

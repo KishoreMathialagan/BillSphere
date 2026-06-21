@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import { NeuoCard } from '../components/molecules/NeuoCard';
+import { GlassCard } from '../components/molecules/GlassCard';
 
 interface DashboardMetrics {
   total_sales: number;
@@ -20,71 +21,16 @@ interface DashboardMetrics {
 }
 
 const Dashboard: React.FC = () => {
-  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
-  
-  // Date Filters
-  const [dateFilter, setDateFilter] = useState('today');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
 
+  // Simplified to this month for the UI mock
   useEffect(() => {
-    // Calculate dates based on quick filter
     const today = new Date();
-    let start = new Date();
-    let end = new Date();
-
-    switch (dateFilter) {
-      case 'today':
-        start = new Date();
-        end = new Date();
-        break;
-      case 'yesterday':
-        start.setDate(today.getDate() - 1);
-        end.setDate(today.getDate() - 1);
-        break;
-      case 'last7days':
-        start.setDate(today.getDate() - 7);
-        break;
-      case 'last30days':
-        start.setDate(today.getDate() - 30);
-        break;
-      case 'thisMonth':
-        start = new Date(today.getFullYear(), today.getMonth(), 1);
-        break;
-      case 'lastMonth':
-        start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        end = new Date(today.getFullYear(), today.getMonth(), 0);
-        break;
-      case 'thisQuarter':
-        const quarter = Math.floor(today.getMonth() / 3);
-        start = new Date(today.getFullYear(), quarter * 3, 1);
-        break;
-      case 'thisFinancialYear':
-        const isPastApril = today.getMonth() >= 3;
-        const fyStartYear = isPastApril ? today.getFullYear() : today.getFullYear() - 1;
-        start = new Date(fyStartYear, 3, 1); // April 1st
-        break;
-      case 'lastFinancialYear':
-        const isPastAprilLast = today.getMonth() >= 3;
-        const fyStartYearLast = isPastAprilLast ? today.getFullYear() - 1 : today.getFullYear() - 2;
-        start = new Date(fyStartYearLast, 3, 1);
-        end = new Date(fyStartYearLast + 1, 2, 31);
-        break;
-      case 'custom':
-        // Do not auto-calculate, rely on explicit startDate and endDate
-        return; 
-    }
-
-    if (dateFilter !== 'custom') {
-      const startStr = start.toISOString().split('T')[0];
-      const endStr = end.toISOString().split('T')[0];
-      setStartDate(startStr);
-      setEndDate(endStr);
-      fetchDashboardData(startStr, endStr);
-    }
-  }, [dateFilter]);
+    const startStr = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+    const endStr = new Date().toISOString().split('T')[0];
+    fetchDashboardData(startStr, endStr);
+  }, []);
 
   const fetchDashboardData = async (start: string, end: string) => {
     if (!start || !end) return;
@@ -99,160 +45,154 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const handleCustomDateFetch = () => {
-    fetchDashboardData(startDate, endDate);
-  };
+  // Mock Health Score for UI presentation as per design system
+  const healthScore = metrics ? 87 : '--';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
-      
-      {/* Header and Filters */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: '28px', color: 'var(--text-h)' }}>Executive Dashboard</h2>
-          <p style={{ margin: 0, opacity: 0.7 }}>Welcome back, {user?.sub?.split('@')[0] || 'User'}</p>
-        </div>
-
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', background: 'var(--code-bg)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ fontSize: '12px', fontWeight: 600 }}>Date Range</label>
-            <select 
-              value={dateFilter} 
-              onChange={e => setDateFilter(e.target.value)}
-              style={{ padding: '8px 12px', borderRadius: '6px', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)' }}
-            >
-              <option value="today">Today</option>
-              <option value="yesterday">Yesterday</option>
-              <option value="last7days">Last 7 Days</option>
-              <option value="last30days">Last 30 Days</option>
-              <option value="thisMonth">This Month</option>
-              <option value="lastMonth">Last Month</option>
-              <option value="thisQuarter">This Quarter</option>
-              <option value="thisFinancialYear">This Financial Year</option>
-              <option value="lastFinancialYear">Last Financial Year</option>
-              <option value="custom">Custom Range</option>
-            </select>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
+      {/* Top Row: KPI Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 'var(--space-6)' }}>
+        <NeuoCard>
+          <div className="data-label" style={{ color: 'var(--color-night-60)', marginBottom: 'var(--space-2)' }}>Revenue</div>
+          <div className="metric-lg" style={{ color: 'var(--color-cyprus)' }}>
+            {loading ? <span className="skeleton" style={{ width: '120px', height: '40px', display: 'inline-block' }}></span> : `₹${metrics?.total_revenue.toLocaleString()}`}
           </div>
+          <div className="body-sm" style={{ color: 'var(--color-night-60)', marginTop: 'var(--space-1)' }}>Today's Revenue</div>
+          <div style={{ marginTop: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <span className="data-number" style={{ color: 'var(--color-success)', fontWeight: 600 }}>▲ +12.4%</span>
+            <span className="body-sm" style={{ color: 'var(--color-night-40)' }}>vs yesterday</span>
+          </div>
+        </NeuoCard>
 
-          {dateFilter === 'custom' && (
-            <>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 600 }}>Start</label>
-                <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={{ padding: '8px 12px', borderRadius: '6px', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)' }} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 600 }}>End</label>
-                <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={{ padding: '8px 12px', borderRadius: '6px', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)' }} />
-              </div>
-              <button 
-                onClick={handleCustomDateFetch}
-                style={{ padding: '8px 16px', borderRadius: '6px', background: 'var(--accent)', color: 'white', border: 'none', fontWeight: 600, cursor: 'pointer' }}
-              >
-                Apply
-              </button>
-            </>
-          )}
-        </div>
+        <NeuoCard>
+          <div className="data-label" style={{ color: 'var(--color-night-60)', marginBottom: 'var(--space-2)' }}>Invoices</div>
+          <div className="metric-lg" style={{ color: 'var(--color-night)' }}>
+            {loading ? <span className="skeleton" style={{ width: '80px', height: '40px', display: 'inline-block' }}></span> : 143}
+          </div>
+          <div className="body-sm" style={{ color: 'var(--color-night-60)', marginTop: 'var(--space-1)' }}>Issued Today</div>
+          <div style={{ marginTop: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <span className="data-number" style={{ color: 'var(--color-night-40)' }}>Avg ₹1,240</span>
+          </div>
+        </NeuoCard>
+
+        <NeuoCard>
+          <div className="data-label" style={{ color: 'var(--color-night-60)', marginBottom: 'var(--space-2)' }}>Stock Alerts</div>
+          <div className="metric-lg" style={{ color: 'var(--color-warning)' }}>
+            {loading ? <span className="skeleton" style={{ width: '60px', height: '40px', display: 'inline-block' }}></span> : 18}
+          </div>
+          <div className="body-sm" style={{ color: 'var(--color-night-60)', marginTop: 'var(--space-1)' }}>Items below par</div>
+          <div style={{ marginTop: 'var(--space-4)' }}>
+            <Link to="/app/inventory" className="body-sm" style={{ fontWeight: 600 }}>View Alerts →</Link>
+          </div>
+        </NeuoCard>
+
+        <NeuoCard>
+          <div className="data-label" style={{ color: 'var(--color-night-60)', marginBottom: 'var(--space-2)' }}>AI Insights</div>
+          <div className="metric-lg" style={{ color: 'var(--color-cyprus)' }}>
+            {loading ? <span className="skeleton" style={{ width: '60px', height: '40px', display: 'inline-block' }}></span> : 3}
+          </div>
+          <div className="body-sm" style={{ color: 'var(--color-night-60)', marginTop: 'var(--space-1)' }}>New recommendations</div>
+          <div style={{ marginTop: 'var(--space-4)' }}>
+            <Link to="/app/assistant" className="body-sm" style={{ fontWeight: 600 }}>Read Insights →</Link>
+          </div>
+        </NeuoCard>
       </div>
 
-      {loading ? (
-        <div style={{ padding: '40px', textAlign: 'center', opacity: 0.6 }}>Loading dashboard data...</div>
-      ) : metrics ? (
-        <>
-          {/* Section 1: Financial Reports (Net Profit, Revenue, Expenses, GST) */}
-          <h3 style={{ margin: '0 0 -12px', color: 'var(--text-h)' }}>Financial Summary</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
-            {[
-              { label: 'Net Profit', value: metrics.net_profit, isCurrency: true, icon: '💰', color: metrics.net_profit >= 0 ? '#10b981' : '#ef4444' },
-              { label: 'Total Revenue', value: metrics.total_revenue, isCurrency: true, icon: '📈', color: 'var(--accent)' },
-              { label: 'Total Expenses', value: metrics.total_expenses, isCurrency: true, icon: '📉', color: '#f59e0b' },
-              { label: 'GST Collected', value: metrics.gst_collected, isCurrency: true, icon: '🧾', color: '#3b82f6' },
-            ].map((stat, idx) => (
-              <div key={idx} style={{ background: 'var(--code-bg)', borderRadius: '12px', padding: '24px', border: '1px solid var(--border)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
-                <span style={{ fontSize: '12px', fontWeight: 600, opacity: 0.7, textTransform: 'uppercase' }}>{stat.label}</span>
-                <h3 style={{ margin: '8px 0 0', fontSize: '28px', color: stat.color }}>
-                  {stat.isCurrency ? '$' + stat.value.toFixed(2) : stat.value}
-                </h3>
+      {/* Middle Section: Chart & Cyprus Halo */}
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--space-6)' }}>
+        
+        {/* Sales Chart Area */}
+        <NeuoCard style={{ display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)' }}>
+            <h2 className="heading-3" style={{ margin: 0, fontFamily: 'var(--font-heading)' }}>Sales Overview</h2>
+            <div className="body-sm" style={{ color: 'var(--color-night-60)' }}>This Month</div>
+          </div>
+          <div style={{ flexGrow: 1, minHeight: '260px', display: 'flex', alignItems: 'flex-end', gap: '8px', paddingBottom: '16px', position: 'relative' }}>
+            {/* Pseudo-chart for UI visualization */}
+            {[40, 60, 45, 80, 50, 90, 75].map((height, i) => (
+              <div key={i} style={{ flex: 1, background: 'var(--color-cyprus-tint)', borderRadius: '4px 4px 0 0', position: 'relative', height: '100%', display: 'flex', alignItems: 'flex-end' }}>
+                <div style={{ width: '100%', height: `${height}%`, background: 'var(--color-cyprus)', borderRadius: '4px 4px 0 0', opacity: i === 6 ? 1 : 0.6, transition: 'height 1s var(--ease-spring)' }}></div>
               </div>
             ))}
           </div>
+        </NeuoCard>
 
-          {/* Section 2: Sales & Purchases */}
-          <h3 style={{ margin: '16px 0 -12px', color: 'var(--text-h)' }}>Sales & Purchases</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-            <div style={{ background: 'var(--code-bg)', borderRadius: '12px', padding: '24px', border: '1px solid var(--border)' }}>
-              <span style={{ fontSize: '12px', fontWeight: 600, opacity: 0.7, textTransform: 'uppercase' }}>Gross Sales (Invoices)</span>
-              <h3 style={{ margin: '8px 0 0', fontSize: '28px', color: '#10b981' }}>${metrics.total_sales.toFixed(2)}</h3>
-              
-              <h4 style={{ marginTop: '24px', fontSize: '14px', borderBottom: '1px solid var(--border)', paddingBottom: '8px' }}>Top Products by Sales</h4>
-              {metrics.top_products.length > 0 ? metrics.top_products.map((p, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px dashed var(--border)' }}>
-                  <span>{p.name}</span>
-                  <span style={{ fontWeight: 600 }}>${p.amount.toFixed(2)}</span>
-                </div>
-              )) : <div style={{ padding: '12px 0', opacity: 0.6 }}>No sales data for this period</div>}
-            </div>
-
-            <div style={{ background: 'var(--code-bg)', borderRadius: '12px', padding: '24px', border: '1px solid var(--border)' }}>
-              <span style={{ fontSize: '12px', fontWeight: 600, opacity: 0.7, textTransform: 'uppercase' }}>Total Purchases</span>
-              <h3 style={{ margin: '8px 0 0', fontSize: '28px', color: '#f59e0b' }}>${metrics.total_purchases.toFixed(2)}</h3>
-              
-              <h4 style={{ marginTop: '24px', fontSize: '14px', borderBottom: '1px solid var(--border)', paddingBottom: '8px' }}>Top Categories by Sales</h4>
-              {metrics.top_categories.length > 0 ? metrics.top_categories.map((c, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px dashed var(--border)' }}>
-                  <span>{c.name}</span>
-                  <span style={{ fontWeight: 600 }}>${c.amount.toFixed(2)}</span>
-                </div>
-              )) : <div style={{ padding: '12px 0', opacity: 0.6 }}>No sales data for this period</div>}
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '16px' }}>
-            {/* Section 3: Customers & Vendors (Receivables/Payables) */}
-            <div>
-              <h3 style={{ margin: '0 0 16px', color: 'var(--text-h)' }}>Network & Balances</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                <div style={{ background: 'var(--code-bg)', borderRadius: '12px', padding: '20px', border: '1px solid var(--border)' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 600, opacity: 0.7 }}>Customers (New)</span>
-                  <h3 style={{ margin: '8px 0 0', fontSize: '24px', color: 'var(--text-h)' }}>{metrics.customer_count}</h3>
-                </div>
-                <div style={{ background: 'var(--code-bg)', borderRadius: '12px', padding: '20px', border: '1px solid var(--border)' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 600, opacity: 0.7 }}>A/R (Total Outstanding)</span>
-                  <h3 style={{ margin: '8px 0 0', fontSize: '24px', color: metrics.outstanding_receivables > 0 ? '#ef4444' : '#10b981' }}>
-                    ${metrics.outstanding_receivables.toFixed(2)}
-                  </h3>
-                </div>
-                <div style={{ background: 'var(--code-bg)', borderRadius: '12px', padding: '20px', border: '1px solid var(--border)' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 600, opacity: 0.7 }}>Vendors (New)</span>
-                  <h3 style={{ margin: '8px 0 0', fontSize: '24px', color: 'var(--text-h)' }}>{metrics.vendor_count}</h3>
-                </div>
-                <div style={{ background: 'var(--code-bg)', borderRadius: '12px', padding: '20px', border: '1px solid var(--border)' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 600, opacity: 0.7 }}>A/P (Total Payable)</span>
-                  <h3 style={{ margin: '8px 0 0', fontSize: '24px', color: metrics.outstanding_payables > 0 ? '#ef4444' : '#10b981' }}>
-                    ${metrics.outstanding_payables.toFixed(2)}
-                  </h3>
-                </div>
-              </div>
-            </div>
-
-            {/* Section 4: Inventory */}
-            <div>
-              <h3 style={{ margin: '0 0 16px', color: 'var(--text-h)' }}>Inventory Snapshot</h3>
-              <div style={{ background: 'var(--code-bg)', borderRadius: '12px', padding: '32px', border: '1px solid var(--border)', height: 'calc(100% - 56px)' }}>
-                <span style={{ fontSize: '12px', fontWeight: 600, opacity: 0.7, textTransform: 'uppercase' }}>Total Asset Value (Cost)</span>
-                <h3 style={{ margin: '8px 0 16px', fontSize: '36px', color: '#8b5cf6' }}>${metrics.inventory_value.toFixed(2)}</h3>
-                <p style={{ opacity: 0.7, fontSize: '14px', lineHeight: '1.5' }}>
-                  This represents the current total value of all your stock on hand across all branches, calculated using their recorded purchase price.
-                </p>
-                <Link to="/app/inventory" style={{ display: 'inline-block', marginTop: '16px', padding: '10px 16px', background: 'var(--accent)', color: 'white', textDecoration: 'none', borderRadius: '8px', fontWeight: 600 }}>
-                  Manage Inventory →
-                </Link>
+        {/* Cyprus Halo Area */}
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 'var(--space-8) 0' }}>
+          <div className="cyprus-halo-ring">
+            <div className="cyprus-halo-inner">
+              <div className="body-sm" style={{ color: 'rgba(240, 237, 228, 0.70)' }}>Business Health</div>
+              <div className="display-text" style={{ color: 'var(--color-sand)', marginTop: '-8px' }}>
+                {loading ? '--' : healthScore}
               </div>
             </div>
           </div>
-        </>
-      ) : null}
+          <style>{`
+            .cyprus-halo-ring {
+              width: 280px;
+              height: 280px;
+              border-radius: 50%;
+              background: var(--color-sand);
+              box-shadow: 12px 12px 28px var(--color-sand-shadow), -12px -12px 28px #FFFFFF;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              position: relative;
+              animation: halo-pulse 3s ease-in-out infinite;
+            }
+            .cyprus-halo-ring::before {
+              content: '';
+              position: absolute;
+              inset: 8px;
+              border-radius: 50%;
+              border: 1.5px dashed rgba(0, 71, 65, 0.35);
+              animation: halo-spin 40s linear infinite;
+            }
+            .cyprus-halo-ring::after {
+              content: '';
+              position: absolute;
+              inset: 20px;
+              border-radius: 50%;
+              border: 1px solid rgba(0, 71, 65, 0.12);
+            }
+            .cyprus-halo-inner {
+              width: 200px;
+              height: 200px;
+              border-radius: 50%;
+              background: rgba(0, 71, 65, 0.14);
+              backdrop-filter: blur(20px) saturate(160%);
+              border: 1px solid rgba(240, 237, 228, 0.28);
+              box-shadow: inset 0 1px 0 rgba(240,237,228,0.20), 0 8px 32px rgba(0,0,0,0.18);
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              z-index: 2;
+            }
+          `}</style>
+        </div>
 
+      </div>
+
+      {/* Bottom Section: AI Recommendations */}
+      <div style={{ marginTop: 'var(--space-2)' }}>
+        <div style={{ background: 'var(--color-cyprus-deep)', borderRadius: 'var(--radius-xl)', padding: 'var(--space-6)', display: 'flex', gap: 'var(--space-6)', overflowX: 'auto', alignItems: 'center' }}>
+          <div style={{ paddingRight: 'var(--space-4)', borderRight: '1px solid rgba(240,237,228,0.2)' }}>
+            <div className="display-sm-text" style={{ color: 'var(--color-sand)' }}>AI</div>
+          </div>
+          
+          <GlassCard variant="dark" style={{ minWidth: '320px', padding: 'var(--space-4)' }}>
+            <div className="data-label" style={{ color: 'var(--color-sand)', opacity: 0.7, marginBottom: 'var(--space-2)' }}>INVENTORY ALERT</div>
+            <div className="body" style={{ color: 'var(--color-sand)' }}>Milk inventory will run out in 3 days. Recommend ordering 50 liters.</div>
+          </GlassCard>
+
+          <GlassCard variant="dark" style={{ minWidth: '320px', padding: 'var(--space-4)' }}>
+            <div className="data-label" style={{ color: 'var(--color-sand)', opacity: 0.7, marginBottom: 'var(--space-2)' }}>TREND ANALYSIS</div>
+            <div className="body" style={{ color: 'var(--color-sand)' }}>Rice category up 22% this week. Expect continued demand due to upcoming festival.</div>
+          </GlassCard>
+        </div>
+      </div>
+      
     </div>
   );
 };

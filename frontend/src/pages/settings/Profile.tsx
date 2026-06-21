@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../../services/api';
+import { NeuoCard } from '../../components/molecules/NeuoCard';
+import { Button } from '../../components/atoms/Button';
+import { Input } from '../../components/atoms/Input';
+import { Badge } from '../../components/atoms/Badge';
 
 const Profile = () => {
   const [profile, setProfile] = useState({
@@ -68,140 +72,147 @@ const Profile = () => {
   };
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', background: 'var(--code-bg)', padding: '30px', borderRadius: '12px', border: '1px solid var(--border)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-        <h2 style={{ margin: 0, color: 'var(--text-h)' }}>My Profile</h2>
-        <button 
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)', maxWidth: '1000px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h2 className="heading-2">My Profile</h2>
+          <p className="body" style={{ color: 'var(--color-night-60)' }}>Manage your personal details and business identity.</p>
+        </div>
+        <Button 
+          variant={isEditing ? 'filled' : 'neuo'} 
           onClick={() => isEditing ? handleSave() : setIsEditing(true)}
-          style={{ padding: '10px 20px', borderRadius: '8px', background: isEditing ? '#10b981' : 'var(--accent)', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 600 }}
         >
           {isEditing ? 'Save Changes' : 'Edit Profile'}
-        </button>
+        </Button>
       </div>
 
-      <div style={{ display: 'flex', gap: '40px' }}>
-        {/* Logo Section */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', width: '200px' }}>
-          <div style={{ 
-            width: '150px', 
-            height: '150px', 
-            borderRadius: '50%', 
-            background: 'var(--bg)', 
-            border: '2px dashed var(--border)', 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center',
-            overflow: 'hidden',
-            position: 'relative'
-          }}>
-            {profile.logo_url ? (
-              <img src={profile.logo_url} alt="Brand Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            ) : (
-              <span style={{ color: 'var(--text-h)', opacity: 0.5, fontSize: '48px' }}>🏢</span>
-            )}
-            
-            {isEditing && (
-              <div 
-                onClick={() => fileInputRef.current?.click()}
-                style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.6)', color: 'white', textAlign: 'center', padding: '8px 0', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
-              >
-                Upload Logo
-              </div>
-            )}
-            <input type="file" ref={fileInputRef} onChange={handleLogoUpload} accept="image/*" style={{ display: 'none' }} />
+      <div style={{ display: 'flex', gap: 'var(--space-6)', flexWrap: 'wrap' }}>
+        
+        {/* Left Column: Avatar/Logo & Role */}
+        <NeuoCard style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 'var(--space-6)' }}>
+          <div style={{ position: 'relative', width: '160px', height: '160px' }}>
+            <div style={{ 
+              width: '100%', 
+              height: '100%', 
+              borderRadius: '50%', 
+              background: 'var(--color-sand)', 
+              boxShadow: 'var(--shadow-neuo-sm)',
+              border: '4px solid var(--color-sand)',
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              overflow: 'hidden',
+              position: 'relative'
+            }}>
+              {profile.logo_url ? (
+                <img src={profile.logo_url} alt="Brand Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <span style={{ color: 'var(--color-cyprus)', opacity: 0.5, fontSize: '64px' }}>🏢</span>
+              )}
+              
+              {isEditing && (
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{ 
+                    position: 'absolute', 
+                    bottom: 0, 
+                    left: 0, 
+                    right: 0, 
+                    background: 'rgba(0,0,0,0.6)', 
+                    color: 'white', 
+                    padding: '12px 0', 
+                    cursor: 'pointer', 
+                    fontFamily: 'var(--font-heading)',
+                    fontSize: '12px', 
+                    fontWeight: 600,
+                    backdropFilter: 'blur(4px)'
+                  }}
+                >
+                  Upload Logo
+                </div>
+              )}
+              <input type="file" ref={fileInputRef} onChange={handleLogoUpload} accept="image/*" style={{ display: 'none' }} />
+            </div>
           </div>
-          <div style={{ textAlign: 'center' }}>
-            <h3 style={{ margin: '0 0 4px', color: 'var(--text-h)' }}>{profile.business_name || 'Brand Name'}</h3>
-            <span style={{ fontSize: '14px', color: 'var(--accent)', fontWeight: 600, background: 'rgba(99, 102, 241, 0.1)', padding: '4px 12px', borderRadius: '20px' }}>
-              {profile.role || 'Role'}
-            </span>
-          </div>
-        </div>
-
-        {/* Details Section */}
-        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-h)', opacity: 0.8 }}>First Name</label>
-            <input 
-              name="first_name" 
-              value={profile.first_name} 
-              onChange={handleChange} 
-              disabled={!isEditing} 
-              style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: isEditing ? 'var(--bg)' : 'transparent', color: 'var(--text)' }} 
-            />
+          <div>
+            <h3 className="heading-3" style={{ margin: '0 0 var(--space-2)' }}>{profile.business_name || 'Your Brand'}</h3>
+            <Badge variant="cyprus">{profile.role || 'Admin'}</Badge>
           </div>
+        </NeuoCard>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-h)', opacity: 0.8 }}>Last Name</label>
-            <input 
-              name="last_name" 
-              value={profile.last_name} 
-              onChange={handleChange} 
-              disabled={!isEditing} 
-              style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: isEditing ? 'var(--bg)' : 'transparent', color: 'var(--text)' }} 
-            />
-          </div>
+        {/* Right Column: Forms */}
+        <div style={{ flex: '2 1 500px', display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+          
+          <NeuoCard>
+            <h3 className="heading-3" style={{ marginBottom: 'var(--space-6)', borderBottom: '1px solid var(--color-sand-dark)', paddingBottom: 'var(--space-4)' }}>Personal Information</h3>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+              <Input 
+                label="First Name"
+                name="first_name" 
+                value={profile.first_name} 
+                onChange={handleChange} 
+                disabled={!isEditing} 
+              />
+              <Input 
+                label="Last Name"
+                name="last_name" 
+                value={profile.last_name} 
+                onChange={handleChange} 
+                disabled={!isEditing} 
+              />
+              <Input 
+                label="Email Address"
+                name="email" 
+                type="email"
+                value={profile.email} 
+                onChange={handleChange} 
+                disabled={!isEditing} 
+              />
+              <Input 
+                label="Phone Number"
+                name="phone" 
+                type="tel"
+                value={profile.phone} 
+                onChange={handleChange} 
+                disabled={!isEditing} 
+              />
+            </div>
+          </NeuoCard>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-h)', opacity: 0.8 }}>Email Address</label>
-            <input 
-              name="email" 
-              value={profile.email} 
-              onChange={handleChange} 
-              disabled={!isEditing} 
-              style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: isEditing ? 'var(--bg)' : 'transparent', color: 'var(--text)' }} 
-            />
-          </div>
+          <NeuoCard>
+            <h3 className="heading-3" style={{ marginBottom: 'var(--space-6)', borderBottom: '1px solid var(--color-sand-dark)', paddingBottom: 'var(--space-4)' }}>Shop & Branch Details</h3>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+              <Input 
+                label="Shop / Brand Name"
+                name="business_name" 
+                value={profile.business_name} 
+                onChange={handleChange} 
+                disabled={!isEditing} 
+              />
+              <Input 
+                label="Branch Name"
+                name="branch_name" 
+                value={profile.branch_name} 
+                onChange={handleChange} 
+                disabled={!isEditing} 
+              />
+              <div style={{ gridColumn: '1 / -1' }}>
+                <Input 
+                  label="Branch Address"
+                  name="address" 
+                  value={profile.address} 
+                  onChange={handleChange} 
+                  disabled={!isEditing} 
+                />
+              </div>
+            </div>
+          </NeuoCard>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-h)', opacity: 0.8 }}>Phone Number</label>
-            <input 
-              name="phone" 
-              value={profile.phone} 
-              onChange={handleChange} 
-              disabled={!isEditing} 
-              style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: isEditing ? 'var(--bg)' : 'transparent', color: 'var(--text)' }} 
-            />
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', gridColumn: '1 / -1', marginTop: '10px', borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
-            <h4 style={{ margin: 0, color: 'var(--text-h)' }}>Shop & Branch Details</h4>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-h)', opacity: 0.8 }}>Shop / Brand Name</label>
-            <input 
-              name="business_name" 
-              value={profile.business_name} 
-              onChange={handleChange} 
-              disabled={!isEditing} 
-              style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: isEditing ? 'var(--bg)' : 'transparent', color: 'var(--text)' }} 
-            />
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-h)', opacity: 0.8 }}>Branch Name</label>
-            <input 
-              name="branch_name" 
-              value={profile.branch_name} 
-              onChange={handleChange} 
-              disabled={!isEditing} 
-              style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: isEditing ? 'var(--bg)' : 'transparent', color: 'var(--text)' }} 
-            />
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', gridColumn: '1 / -1' }}>
-            <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-h)', opacity: 0.8 }}>Branch Address</label>
-            <input 
-              name="address" 
-              value={profile.address} 
-              onChange={handleChange} 
-              disabled={!isEditing} 
-              style={{ padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: isEditing ? 'var(--bg)' : 'transparent', color: 'var(--text)' }} 
-            />
-          </div>
         </div>
+
       </div>
     </div>
   );

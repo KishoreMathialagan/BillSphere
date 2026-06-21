@@ -32,7 +32,7 @@ try:
 except Exception:
     pass
 
-app = FastAPI(title="Bill Sphere API")
+app = FastAPI(title="Vendor Mind API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -65,7 +65,7 @@ app.include_router(forecasting.router, prefix="/api/v1/forecasting", tags=["Fore
 
 @app.get("/")
 def root():
-    return {"message": "Welcome to Bill Sphere API"}
+    return {"message": "Welcome to Vendor Mind API"}
 
 @app.get("/health")
 def health_check():
@@ -162,7 +162,7 @@ def admin_panel(db: Session = Depends(get_db)):
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>BillSphere Admin Console</title>
+        <title>Vendor Mind Admin Console</title>
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -381,7 +381,7 @@ def admin_panel(db: Session = Depends(get_db)):
             <header>
                 <div class="logo-area">
                     <div class="logo-icon">BS</div>
-                    <div class="logo-title">BillSphere Admin Console</div>
+                    <div class="logo-title">Vendor Mind Admin Console</div>
                 </div>
             </header>
             

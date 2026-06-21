@@ -112,7 +112,7 @@ export class HardwareService {
     // Header
     payload.push(...cmd.alignCenter);
     payload.push(...cmd.boldOn);
-    payload.push(...encoder.encode("BILL SPHERE RETAIL\n"));
+    payload.push(...encoder.encode("VENDOR MIND RETAIL\n"));
     payload.push(...cmd.boldOff);
     payload.push(...encoder.encode("Hardware Test Receipt\n"));
     payload.push(...encoder.encode("--------------------------------\n\n"));
@@ -121,7 +121,7 @@ export class HardwareService {
     payload.push(...cmd.alignLeft);
     payload.push(...encoder.encode("Connection: Web Serial API\n"));
     payload.push(...encoder.encode("Status: SUCCESS\n\n"));
-    payload.push(...encoder.encode("Thank you for using Bill Sphere!\n\n\n\n\n"));
+    payload.push(...encoder.encode("Thank you for using Vendor Mind!\n\n\n\n\n"));
     
     // Cut
     payload.push(...cmd.cut);

@@ -6,7 +6,7 @@ export const generateInvoicePDF = (invoiceData: any, customer: any, tenant: any)
   
   // Header
   doc.setFontSize(22);
-  doc.text(tenant?.name || 'BillSphere Tenant', 14, 22);
+  doc.text(tenant?.name || 'Vendor Mind Tenant', 14, 22);
   
   doc.setFontSize(10);
   doc.text(`Invoice No: ${invoiceData.invoice_number}`, 14, 30);
