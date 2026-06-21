@@ -10,4 +10,5 @@ class User(Base):
     password_hash = Column(String)
     first_name = Column(String, nullable=True)
     last_name = Column(String, nullable=True)
+    phone = Column(String, nullable=True)
     role = Column(String, default="Cashier")

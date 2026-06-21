@@ -13,3 +13,4 @@ class Tenant(Base):
     inventory_mode = Column(String, default="Strict") # "Strict" or "Flexible"
     financial_year_start = Column(DateTime, nullable=True) # E.g. April 1st of current year
     ai_model = Column(String, default="qwen/qwen-2.5-7b-instruct") # OpenRouter model ID
+    logo_url = Column(String, nullable=True)

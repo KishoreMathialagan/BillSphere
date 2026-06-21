@@ -20,6 +20,18 @@ try:
 except Exception:
     pass
 
+try:
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE users ADD COLUMN phone VARCHAR"))
+except Exception:
+    pass
+
+try:
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE tenants ADD COLUMN logo_url VARCHAR"))
+except Exception:
+    pass
+
 app = FastAPI(title="Bill Sphere API")
 
 app.add_middleware(

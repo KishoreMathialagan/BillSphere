@@ -35,6 +35,7 @@ const Layout: React.FC = () => {
     { path: '/app/assistant', label: 'AI Advisor', icon: '✨' },
     { path: '/app/settings/ai', label: 'AI Configuration', icon: '🧠' },
     { path: '/app/settings/hardware', label: 'Hardware Settings', icon: '⚙️' },
+    { path: '/app/settings/profile', label: 'My Profile', icon: '👤' },
   ];
 
   // Get current page title

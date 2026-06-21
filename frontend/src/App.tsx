@@ -30,6 +30,7 @@ import BalanceSheet from './pages/accounting/BalanceSheet';
 import GSTReports from './pages/reports/GSTReports';
 import HardwareSettings from './pages/settings/HardwareSettings';
 import AISettings from './pages/settings/AISettings';
+import Profile from './pages/settings/Profile';
 import AIAssistant from './pages/assistant/AIAssistant';
 import ForecastingDashboard from './pages/forecasting/ForecastingDashboard';
 
@@ -75,6 +76,7 @@ function App() {
               
               <Route path="/app/settings/hardware" element={<HardwareSettings />} />
               <Route path="/app/settings/ai" element={<AISettings />} />
+              <Route path="/app/settings/profile" element={<Profile />} />
               <Route path="/app/assistant" element={<AIAssistant />} />
               <Route path="/app/forecasting" element={<ForecastingDashboard />} />
             </Route>
