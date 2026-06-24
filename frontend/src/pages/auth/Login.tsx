@@ -57,10 +57,7 @@ const Login: React.FC = () => {
         
         <div style={{ marginBottom: 'var(--space-8)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-10)' }}>
-            <div style={{ width: '24px', height: '24px', borderRadius: '4px', background: 'var(--color-cyprus)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-sand)', fontWeight: 'bold', fontFamily: 'var(--font-heading)', fontSize: '12px' }}>
-              VM
-            </div>
-            <span className="heading-3" style={{ margin: 0 }}>Vendor Mind.</span>
+            <img src="/logo.svg" alt="Vendor Mind Logo" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
           </div>
 
           <p className="body-sm" style={{ color: 'var(--color-night-40)', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600 }}>Start for free</p>

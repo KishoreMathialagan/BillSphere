@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Input } from '../atoms/Input';
@@ -5,6 +6,17 @@ import { Input } from '../atoms/Input';
 const Layout: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [showSplash, setShowSplash] = useState(() => !sessionStorage.getItem('splashShown'));
+
+  useEffect(() => {
+    if (showSplash) {
+      const timer = setTimeout(() => {
+        setShowSplash(false);
+        sessionStorage.setItem('splashShown', 'true');
+      }, 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [showSplash]);
 
   const handleLogout = () => {
     logout();
@@ -233,10 +245,35 @@ const Layout: React.FC = () => {
         }
       `}</style>
 
+      {showSplash && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999, background: '#000',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          animation: 'fadeOut 0.5s ease-in-out 2s forwards'
+        }}>
+          <style>{`
+            @keyframes fadeOut {
+              0% { opacity: 1; visibility: visible; }
+              100% { opacity: 0; visibility: hidden; }
+            }
+            @keyframes logoScale {
+              0% { transform: scale(0.5); opacity: 0; }
+              20% { transform: scale(1.1); opacity: 1; }
+              100% { transform: scale(1); opacity: 1; }
+            }
+          `}</style>
+          <img 
+            src="/logo.svg" 
+            alt="Vendor Mind" 
+            style={{ width: '200px', height: '200px', animation: 'logoScale 2s cubic-bezier(0.1, 0.7, 0.1, 1) forwards' }} 
+          />
+        </div>
+      )}
+
       {/* Desktop Sidebar */}
       <aside className="desktop-sidebar">
         <div className="brand-logo">
-          <div className="brand-icon">VM</div>
+          <img src="/logo.svg" alt="Vendor Mind Logo" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
           <div className="brand-text-wrapper">
             <span className="brand-title">Vendor Mind</span>
             <span className="brand-subtitle">Retail OS</span>

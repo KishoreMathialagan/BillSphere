@@ -33,7 +33,7 @@ const POS: React.FC = () => {
   const [showManualBilling, setShowManualBilling] = useState(false);
   const [manualItem, setManualItem] = useState({ name: '', price: 0, quantity: 1, taxRate: 0, discountType: 'PERCENTAGE' as DiscountType, discountValue: 0 });
 
-  const { isOnline, forceSync, inventoryMode } = useSync();
+  const { isOnline, forceSync, inventoryMode, lastSync } = useSync();
   const { tenantState } = useAuth();
 
   useBarcodeScanner({
@@ -48,7 +48,7 @@ const POS: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [lastSync]);
 
   const fetchData = async () => {
     try {
@@ -59,6 +59,8 @@ const POS: React.FC = () => {
       (prodRes || []).forEach((p: any) => {
         flatList.push({
           ...p,
+          selling_price: Number(p.selling_price || 0),
+          tax_rate: Number(p.tax_rate || 0),
           search_string: `${p.product_name} ${p.barcode || ''} ${p.sku || ''}`.toLowerCase()
         });
       });

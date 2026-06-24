@@ -53,8 +53,8 @@ const PurchaseEntry: React.FC = () => {
           for (const p of products) {
             const v = p.variants.find((v: any) => v.variant_id === value);
             if (v) {
-              updated.unit_price = v.purchase_price || 0;
-              updated.tax_rate = p.tax_rate || 0;
+              updated.unit_price = Number(v.purchase_price || 0);
+              updated.tax_rate = Number(p.tax_rate || 0);
               updated.hsn_code = p.hsn_code || '';
               break;
             }
