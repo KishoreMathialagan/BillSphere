@@ -11,8 +11,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ isViewOnly = false }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [categories, setCategories] = useState<any[]>([]);
-  const [product, setProduct] = useState({ name: '', category_id: '', hsn_code: '', tax_rate: 0 });
-  const [variant, setVariant] = useState({ barcode: '', sku: '', purchase_price: 0, selling_price: 0 });
+  const [product, setProduct] = useState<any>({ name: '', category_id: '', hsn_code: '', tax_rate: '' });
+  const [variant, setVariant] = useState<any>({ barcode: '', sku: '', purchase_price: '', selling_price: '' });
 
   useEffect(() => {
     api.get('/inventory/categories').then(res => setCategories(res.data));
@@ -67,13 +67,13 @@ const ProductForm: React.FC<ProductFormProps> = ({ isViewOnly = false }) => {
           {categories.map((c: any) => <option key={c.category_id} value={c.category_id}>{c.name}</option>)}
         </select>
         <input placeholder="HSN Code" value={product.hsn_code} onChange={e => setProduct({...product, hsn_code: e.target.value})} disabled={isViewOnly} style={{margin:'5px', padding:'5px'}}/>
-        <input type="number" placeholder="Tax Rate" value={product.tax_rate} onChange={e => setProduct({...product, tax_rate: +e.target.value})} disabled={isViewOnly} style={{margin:'5px', padding:'5px'}}/>
+        <input type="number" placeholder="Tax Rate" value={product.tax_rate} onChange={e => setProduct({...product, tax_rate: e.target.value === '' ? '' : Number(e.target.value)})} disabled={isViewOnly} style={{margin:'5px', padding:'5px'}}/>
         
         <h4 style={{marginLeft: '5px'}}>Variant Details</h4>
         <input placeholder="SKU" value={variant.sku} onChange={e => setVariant({...variant, sku: e.target.value})} disabled={isViewOnly} style={{margin:'5px', padding:'5px'}}/>
         <input placeholder="Barcode String" value={variant.barcode} onChange={e => setVariant({...variant, barcode: e.target.value})} disabled={isViewOnly} style={{margin:'5px', padding:'5px'}}/>
-        <input type="number" placeholder="Purchase Price" value={variant.purchase_price} onChange={e => setVariant({...variant, purchase_price: +e.target.value})} disabled={isViewOnly} style={{margin:'5px', padding:'5px'}}/>
-        <input type="number" placeholder="Selling Price" value={variant.selling_price} onChange={e => setVariant({...variant, selling_price: +e.target.value})} disabled={isViewOnly} style={{margin:'5px', padding:'5px'}}/>
+        <input type="number" placeholder="Purchase Price" value={variant.purchase_price} onChange={e => setVariant({...variant, purchase_price: e.target.value === '' ? '' : Number(e.target.value)})} disabled={isViewOnly} style={{margin:'5px', padding:'5px'}}/>
+        <input type="number" placeholder="Selling Price" value={variant.selling_price} onChange={e => setVariant({...variant, selling_price: e.target.value === '' ? '' : Number(e.target.value)})} disabled={isViewOnly} style={{margin:'5px', padding:'5px'}}/>
         
         {!isViewOnly && (
           <button type="submit" style={{margin:'5px', padding:'10px', backgroundColor:'#28a745', color:'white'}}>Save Product</button>
