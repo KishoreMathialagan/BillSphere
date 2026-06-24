@@ -1,4 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+import re
+
+with open('c:/Users/Lenovo/Downloads/BillSphere/backend/app/api/v1/vendor.py', 'r', encoding='utf-8') as f:
+    vendor_code = f.read()
+
+new_vendor_code = """from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List
 import datetime
@@ -15,7 +20,7 @@ from app.schemas.vendor import (
 )
 from app.api.dependencies import get_current_user
 from app.services.ocr_service import extract_invoice_data
-from app.services.tax_engine import calculate_line_item, calculate_invoice_totals, validate_gstin
+from app.services.tax_engine import calculate_line_item, calculate_invoice_totals
 
 router = APIRouter()
 
@@ -53,9 +58,6 @@ def get_vendors(db: Session = Depends(get_db), current_user: User = Depends(get_
 
 @router.post("", response_model=VendorResponse)
 def create_vendor(vendor: VendorCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if vendor.gst_number and not validate_gstin(vendor.gst_number):
-        raise HTTPException(status_code=400, detail="Invalid GSTIN Format")
-        
     db_vendor = Vendor(
         tenant_id=current_user.tenant_id,
         name=vendor.name,
@@ -93,9 +95,6 @@ def update_vendor(vendor_id: str, vendor_data: VendorUpdate, db: Session = Depen
     ).first()
     if not vendor:
         raise HTTPException(status_code=404, detail="Vendor not found")
-        
-    if vendor_data.gst_number and not validate_gstin(vendor_data.gst_number):
-        raise HTTPException(status_code=400, detail="Invalid GSTIN Format")
     
     vendor.name = vendor_data.name
     vendor.phone = vendor_data.phone
@@ -138,21 +137,17 @@ def get_vendor_purchases(vendor_id: str, db: Session = Depends(get_db), current_
 @router.post("/{vendor_id}/purchases", response_model=PurchaseResponse)
 def add_vendor_purchase(vendor_id: str, purchase: PurchaseCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     tenant = db.query(Tenant).filter(Tenant.tenant_id == current_user.tenant_id).first()
+    if not tenant or not tenant.state:
+        raise HTTPException(status_code=400, detail="Company state must be configured for GST calculation.")
+
     vendor = db.query(Vendor).filter(
         Vendor.vendor_id == vendor_id,
         Vendor.tenant_id == current_user.tenant_id
     ).first()
-    
     if not vendor:
         raise HTTPException(status_code=404, detail="Vendor not found")
-
-    seller_state = vendor.state
-    if not seller_state:
-        raise HTTPException(status_code=400, detail="Seller state must be configured for GST calculation.")
-
-    buyer_state = tenant.state if tenant else None
-    if not buyer_state:
-        raise HTTPException(status_code=400, detail="Buyer state must be configured for GST calculation.")
+    if not vendor.state:
+        raise HTTPException(status_code=400, detail="Vendor state must be configured for GST calculation.")
 
     processed_items = []
     line_item_models = []
@@ -327,3 +322,7 @@ def pay_vendor_outstanding(vendor_id: str, payment: VendorPaymentCreate, db: Ses
     db.commit()
     db.refresh(vendor)
     return vendor
+"""
+
+with open('c:/Users/Lenovo/Downloads/BillSphere/backend/app/api/v1/vendor.py', 'w', encoding='utf-8') as f:
+    f.write(new_vendor_code)

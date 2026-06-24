@@ -6,6 +6,7 @@ from app.models.tenant import Tenant
 from app.models.branch import Branch
 from app.models.user import User
 from app.core.security import get_password_hash
+from app.services.tax_engine import validate_gstin
 
 router = APIRouter()
 
@@ -13,6 +14,9 @@ router = APIRouter()
 def setup_business(payload: SetupPayload, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == payload.owner_email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
+
+    if payload.gst_number and not validate_gstin(payload.gst_number):
+        raise HTTPException(status_code=400, detail="Invalid GSTIN Format")
 
     try:
         tenant = Tenant(
@@ -71,6 +75,8 @@ def update_tenant_config(config_update: TenantConfigUpdate, db: Session = Depend
     if config_update.business_name is not None:
         tenant.business_name = config_update.business_name
     if config_update.gst_number is not None:
+        if config_update.gst_number and not validate_gstin(config_update.gst_number):
+            raise HTTPException(status_code=400, detail="Invalid GSTIN Format")
         tenant.gst_number = config_update.gst_number
     if config_update.state is not None:
         tenant.state = config_update.state

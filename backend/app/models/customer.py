@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Float, ForeignKey
+from sqlalchemy import Column, String, Numeric, ForeignKey
 from app.db.session import Base
 import uuid
 
@@ -13,5 +13,5 @@ class Customer(Base):
     address = Column(String, nullable=True)
     state = Column(String, nullable=True)
     gst_number = Column(String, nullable=True)
-    credit_limit = Column(Float, default=0.0)
-    outstanding_balance = Column(Float, default=0.0)
+    credit_limit = Column(Numeric(18,2), default=0.0)
+    outstanding_balance = Column(Numeric(18,2), default=0.0)

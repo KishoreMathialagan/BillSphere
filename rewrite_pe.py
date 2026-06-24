@@ -1,4 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import re
+
+with open('c:/Users/Lenovo/Downloads/BillSphere/frontend/src/pages/purchases/PurchaseEntry.tsx', 'r', encoding='utf-8') as f:
+    pe_code = f.read()
+
+new_pe_code = """import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../../services/api';
 import { calculateLineItem, calculateInvoiceTotals, TaxMode, DiscountType } from '../../utils/taxEngine';
@@ -428,3 +433,7 @@ const PurchaseEntry: React.FC = () => {
 };
 
 export default PurchaseEntry;
+"""
+
+with open('c:/Users/Lenovo/Downloads/BillSphere/frontend/src/pages/purchases/PurchaseEntry.tsx', 'w', encoding='utf-8') as f:
+    f.write(new_pe_code)

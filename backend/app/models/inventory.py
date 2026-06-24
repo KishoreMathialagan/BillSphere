@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Float, Integer, ForeignKey, DateTime
+from sqlalchemy import Column, String, Numeric, Integer, ForeignKey, DateTime
 from app.db.session import Base
 import uuid
 import datetime
@@ -16,7 +16,7 @@ class Product(Base):
     category_id = Column(String, ForeignKey("categories.category_id"), nullable=True)
     name = Column(String, nullable=False)
     hsn_code = Column(String, nullable=True)
-    tax_rate = Column(Float, default=0.0)
+    tax_rate = Column(Numeric(5,2), default=0.0)
 
 class ProductVariant(Base):
     __tablename__ = "product_variants"
@@ -24,8 +24,8 @@ class ProductVariant(Base):
     product_id = Column(String, ForeignKey("products.product_id"))
     barcode = Column(String, nullable=True, index=True)
     sku = Column(String, nullable=True)
-    purchase_price = Column(Float, default=0.0)
-    selling_price = Column(Float, default=0.0)
+    purchase_price = Column(Numeric(18,2), default=0.0)
+    selling_price = Column(Numeric(18,2), default=0.0)
 
 class Inventory(Base):
     __tablename__ = "inventory"

@@ -1,4 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+import re
+
+with open('c:/Users/Lenovo/Downloads/BillSphere/backend/app/api/v1/sales.py', 'r', encoding='utf-8') as f:
+    sales_code = f.read()
+
+# We need to inject our tax engine logic into checkout_pos
+new_sales_code = """from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import datetime
@@ -25,14 +31,7 @@ def checkout_pos(invoice: InvoiceCreate, customer_id: Optional[str] = None, db: 
         raise HTTPException(status_code=400, detail="Company state must be configured for GST calculation.")
 
     customer = None
-    seller_state = tenant.state
-    if not seller_state:
-        raise HTTPException(status_code=400, detail="Seller state must be configured for GST calculation.")
-        
-    buyer_state = invoice.place_of_supply
-    if not buyer_state:
-        raise HTTPException(status_code=400, detail="Buyer state must be configured for GST calculation.")
-
+    buyer_state = tenant.state
     if customer_id:
         customer = db.query(Customer).filter(
             Customer.customer_id == customer_id,
@@ -40,8 +39,9 @@ def checkout_pos(invoice: InvoiceCreate, customer_id: Optional[str] = None, db: 
         ).first()
         if not customer:
             raise HTTPException(status_code=404, detail="Customer not found")
-        # Ensure customer state matches buyer_state if they are supposed to match, or just rely on place_of_supply
-
+        if not customer.state:
+            raise HTTPException(status_code=400, detail="Customer state must be configured for GST calculation.")
+        buyer_state = customer.state
 
         # Credit limit check
         # Assuming outstanding_amount from frontend is accurate for payment logic
@@ -214,12 +214,7 @@ def sync_offline_invoices(payload: SyncPayload, db: Session = Depends(get_db), c
             continue
             
         customer = None
-        seller_state = tenant.state
-        buyer_state = invoice_data.place_of_supply
-        if not seller_state or not buyer_state:
-            exceptions_count += 1
-            continue
-
+        buyer_state = tenant.state
         if invoice_data.customer_id:
             customer = db.query(Customer).filter(
                 Customer.customer_id == invoice_data.customer_id,
@@ -387,3 +382,7 @@ def sync_offline_invoices(payload: SyncPayload, db: Session = Depends(get_db), c
 
     db.commit()
     return SyncResponse(status="success", synced_invoices=synced_count, exceptions_created=exceptions_count)
+"""
+
+with open('c:/Users/Lenovo/Downloads/BillSphere/backend/app/api/v1/sales.py', 'w', encoding='utf-8') as f:
+    f.write(new_sales_code)

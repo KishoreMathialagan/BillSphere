@@ -1,5 +1,6 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
+from decimal import Decimal
 import datetime
 
 class VendorBase(BaseModel):
@@ -9,7 +10,7 @@ class VendorBase(BaseModel):
     address: Optional[str] = None
     state: Optional[str] = None
     gst_number: Optional[str] = None
-    outstanding_balance: float = 0.0
+    outstanding_balance: Decimal = Decimal("0.00")
 
 class VendorCreate(VendorBase):
     pass
@@ -30,46 +31,47 @@ class VendorResponse(VendorBase):
 
 class PurchaseItemCreate(BaseModel):
     variant_id: str
-    quantity: float
-    unit_price: float
+    quantity: Decimal
+    unit_price: Decimal
+    discount_type: str = "PERCENTAGE"
+    discount_value: Decimal = Decimal("0.00")
     hsn_code: Optional[str] = None
-    tax_rate: float = 0.0
-    tax_amount: float = 0.0
-    cgst_amount: float = 0.0
-    sgst_amount: float = 0.0
-    igst_amount: float = 0.0
-    subtotal: float
+    gst_rate: Decimal = Decimal("0.00")
 
 class PurchaseItemResponse(BaseModel):
     purchase_item_id: str
     variant_id: str
-    quantity: float
-    unit_price: float
+    quantity: Decimal
+    unit_price: Decimal
+    discount_type: str
+    discount_value: Decimal
+    discount_amount: Decimal
+    taxable_amount: Decimal
     hsn_code: Optional[str] = None
-    tax_rate: float
-    tax_amount: float
-    cgst_amount: float
-    sgst_amount: float
-    igst_amount: float
-    subtotal: float
+    gst_rate: Decimal
+    cgst_rate: Decimal
+    sgst_rate: Decimal
+    igst_rate: Decimal
+    tax_amount: Decimal
+    gst_amount: Decimal
+    cgst_amount: Decimal
+    sgst_amount: Decimal
+    igst_amount: Decimal
+    subtotal: Decimal
     class Config:
         from_attributes = True
 
 class PurchaseCreate(BaseModel):
     branch_id: Optional[str] = None
     purchase_number: str
-    total_amount: float
-    outstanding_amount: float = 0.0
-    total_tax: float = 0.0
-    total_cgst: float = 0.0
-    total_sgst: float = 0.0
-    total_igst: float = 0.0
+    is_tax_inclusive: bool = False
+    tax_mode: str = "EXCLUSIVE"
     status: str = "Paid"
     place_of_supply: Optional[str] = None
     eway_bill_number: Optional[str] = None
     transporter_name: Optional[str] = None
     vehicle_number: Optional[str] = None
-    items: Optional[list[PurchaseItemCreate]] = []
+    items: Optional[List[PurchaseItemCreate]] = []
 
 class PurchaseResponse(BaseModel):
     purchase_id: str
@@ -77,22 +79,27 @@ class PurchaseResponse(BaseModel):
     branch_id: Optional[str] = None
     vendor_id: Optional[str] = None
     purchase_number: str
-    total_amount: float
-    outstanding_amount: float
-    total_tax: float
-    total_cgst: float
-    total_sgst: float
-    total_igst: float
+    total_amount: Decimal
+    outstanding_amount: Decimal
+    total_tax: Decimal
+    total_cgst: Decimal
+    total_sgst: Decimal
+    total_igst: Decimal
+    total_discount: Decimal
+    is_tax_inclusive: bool
+    tax_mode: str
+    round_off: Decimal
+    tax_engine_version: str
     status: str
     created_at: datetime.datetime
     place_of_supply: Optional[str] = None
     eway_bill_number: Optional[str] = None
     transporter_name: Optional[str] = None
     vehicle_number: Optional[str] = None
-    items: list[PurchaseItemResponse]
+    items: List[PurchaseItemResponse]
     class Config:
         from_attributes = True
 
 class VendorPaymentCreate(BaseModel):
-    amount: float
+    amount: Decimal
     payment_method: str = "Cash"

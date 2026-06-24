@@ -1,4 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import re
+
+with open('c:/Users/Lenovo/Downloads/BillSphere/frontend/src/pages/pos/POS.tsx', 'r', encoding='utf-8') as f:
+    pos_code = f.read()
+
+new_pos_code = """import React, { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { generateInvoicePDF } from '../../utils/invoicePdf';
 import { getProducts, getCustomers, getInventoryByVariant, decrementInventoryLocal, enqueueInvoice } from '../../db/sqliteManager';
@@ -499,3 +504,7 @@ const POS: React.FC = () => {
 };
 
 export default POS;
+"""
+
+with open('c:/Users/Lenovo/Downloads/BillSphere/frontend/src/pages/pos/POS.tsx', 'w', encoding='utf-8') as f:
+    f.write(new_pos_code)

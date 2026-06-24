@@ -10,6 +10,7 @@ from app.schemas.customer import (
     InvoiceCreate, InvoiceResponse, PaymentCreate
 )
 from app.api.dependencies import get_current_user
+from app.services.tax_engine import validate_gstin
 
 router = APIRouter()
 
@@ -24,6 +25,9 @@ def get_customers(db: Session = Depends(get_db), current_user: User = Depends(ge
 
 @router.post("", response_model=CustomerResponse)
 def create_customer(customer: CustomerCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if customer.gst_number and not validate_gstin(customer.gst_number):
+        raise HTTPException(status_code=400, detail="Invalid GSTIN Format")
+        
     db_customer = Customer(
         tenant_id=current_user.tenant_id,
         name=customer.name,
@@ -60,6 +64,9 @@ def update_customer(customer_id: str, customer_data: CustomerUpdate, db: Session
     ).first()
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
+        
+    if customer_data.gst_number and not validate_gstin(customer_data.gst_number):
+        raise HTTPException(status_code=400, detail="Invalid GSTIN Format")
     
     customer.name = customer_data.name
     customer.phone = customer_data.phone
