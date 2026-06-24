@@ -5,7 +5,7 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token');
+  const token = sessionStorage.getItem('access_token');
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -19,7 +19,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        const refreshToken = localStorage.getItem('refresh_token');
+        const refreshToken = sessionStorage.getItem('refresh_token');
         if (!refreshToken) throw new Error('No refresh token');
         
         const API_URL = import.meta.env.VITE_API_URL || 'https://billsphere-backend.onrender.com/api/v1';
@@ -28,14 +28,14 @@ api.interceptors.response.use(
         });
         
         const { access_token, refresh_token: new_refresh } = res.data;
-        localStorage.setItem('access_token', access_token);
-        localStorage.setItem('refresh_token', new_refresh);
+        sessionStorage.setItem('access_token', access_token);
+        sessionStorage.setItem('refresh_token', new_refresh);
         
         originalRequest.headers.Authorization = `Bearer ${access_token}`;
         return axios(originalRequest);
       } catch (err) {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
+        sessionStorage.removeItem('access_token');
+        sessionStorage.removeItem('refresh_token');
         window.location.href = '/login';
         return Promise.reject(err);
       }

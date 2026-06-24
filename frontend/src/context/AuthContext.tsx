@@ -20,7 +20,17 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    const token = sessionStorage.getItem('access_token');
+    if (token) {
+      try {
+        return jwtDecode<User>(token);
+      } catch (err) {
+        return null;
+      }
+    }
+    return null;
+  });
   const [tenantState, setTenantState] = useState<string | null>(null);
 
   const fetchTenantConfig = async (token: string) => {
@@ -35,7 +45,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
+    const token = sessionStorage.getItem('access_token');
     if (token) {
       try {
         const decoded = jwtDecode<User>(token);
@@ -48,16 +58,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = (access: string, refresh: string) => {
-    localStorage.setItem('access_token', access);
-    localStorage.setItem('refresh_token', refresh);
+    sessionStorage.setItem('access_token', access);
+    sessionStorage.setItem('refresh_token', refresh);
     const decoded = jwtDecode<User>(access);
     setUser(decoded);
     fetchTenantConfig(access);
   };
 
   const logout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
+    sessionStorage.removeItem('access_token');
+    sessionStorage.removeItem('refresh_token');
     setUser(null);
     setTenantState(null);
   };
