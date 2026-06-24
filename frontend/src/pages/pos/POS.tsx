@@ -47,6 +47,10 @@ const POS: React.FC = () => {
   });
 
   useEffect(() => {
+    forceSync().then(() => fetchData());
+  }, []);
+
+  useEffect(() => {
     fetchData();
   }, [lastSync]);
 
@@ -66,8 +70,9 @@ const POS: React.FC = () => {
       });
       setProducts(flatList);
       setCustomers(custRes || []);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load POS data from local DB', err);
+      alert('Error loading POS data: ' + err.message);
     }
   };
 

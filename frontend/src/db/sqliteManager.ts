@@ -56,7 +56,7 @@ export const saveProducts = async (products: any[]) => {
       await sqlocal.sql`
         INSERT INTO local_products 
         (variant_id, product_id, product_name, category_id, hsn_code, tax_rate, barcode, sku, selling_price)
-        VALUES (${v.variant_id}, ${p.product_id}, ${p.name}, ${p.category_id}, ${p.hsn_code}, ${p.tax_rate}, ${v.barcode}, ${v.sku}, ${v.selling_price})
+        VALUES (${v.variant_id}, ${p.product_id}, ${p.name}, ${p.category_id}, ${p.hsn_code || ''}, ${Number(p.tax_rate || 0)}, ${v.barcode || ''}, ${v.sku || ''}, ${Number(v.selling_price || 0)})
       `;
     }
   }
