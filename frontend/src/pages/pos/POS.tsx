@@ -9,7 +9,7 @@ import { hardwareService } from '../../services/HardwareService';
 import { NeuoCard } from '../../components/molecules/NeuoCard';
 import { Button } from '../../components/atoms/Button';
 import { Input } from '../../components/atoms/Input';
-import { calculateLineItem, calculateInvoiceTotals, TaxMode, DiscountType } from '../../utils/taxEngine';
+import { calculateLineItem, calculateInvoiceTotals, type TaxMode, type DiscountType } from '../../utils/taxEngine';
 
 const POS: React.FC = () => {
   const [products, setProducts] = useState<any[]>([]);
@@ -33,7 +33,7 @@ const POS: React.FC = () => {
   const [showManualBilling, setShowManualBilling] = useState(false);
   const [manualItem, setManualItem] = useState({ name: '', price: 0, quantity: 1, taxRate: 0, discountType: 'PERCENTAGE' as DiscountType, discountValue: 0 });
 
-  const { isOnline, forceSync, inventoryMode, lastSync } = useSync();
+  const { isOnline, forceSync, inventoryMode } = useSync();
   const { tenantState } = useAuth();
 
   useBarcodeScanner({
@@ -47,35 +47,34 @@ const POS: React.FC = () => {
   });
 
   useEffect(() => {
-    forceSync().then(() => fetchData());
-  }, []);
-
-  useEffect(() => {
     fetchData();
-  }, [lastSync]);
+  }, []);
 
   const fetchData = async () => {
     try {
       const prodRes = await getProducts();
+      console.log("Products Loaded:", prodRes);
+      alert("Products Count: " + (prodRes?.length || 0));
       const custRes = await getCustomers();
+
+      console.log("POS Product Count:", prodRes?.length);
+      console.log("POS Products:", prodRes);
       
       const flatList: any[] = [];
       (prodRes || []).forEach((p: any) => {
         flatList.push({
           ...p,
-          selling_price: Number(p.selling_price || 0),
-          tax_rate: Number(p.tax_rate || 0),
           search_string: `${p.product_name} ${p.barcode || ''} ${p.sku || ''}`.toLowerCase()
         });
       });
       setProducts(flatList);
       setCustomers(custRes || []);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Failed to load POS data from local DB', err);
-      alert('Error loading POS data: ' + err.message);
     }
   };
 
+  
   useEffect(() => {
     if (scanning) {
       setTimeout(() => {
@@ -124,13 +123,33 @@ const POS: React.FC = () => {
   const onScanFailure = () => {};
 
   const addToCart = (variant: any) => {
-    const existing = cart.find(i => i.variant_id === variant.variant_id);
-    if (existing) {
-      setCart(cart.map(i => i.variant_id === variant.variant_id ? { ...i, quantity: i.quantity + 1 } : i));
-    } else {
-      setCart([...cart, { ...variant, quantity: 1, discountType: 'PERCENTAGE', discountValue: 0 }]);
-    }
-  };
+  const existing = cart.find(
+    i => i.variant_id === variant.variant_id
+  );
+
+  if (existing) {
+    setCart(
+      cart.map(i =>
+        i.variant_id === variant.variant_id
+          ? { ...i, quantity: i.quantity + 1 }
+          : i
+      )
+    );
+  } else {
+    setCart([
+      ...cart,
+      {
+        ...variant,
+        quantity: 1,
+        discountType: 'PERCENTAGE',
+        discountValue: 0
+      }
+    ]);
+  }
+
+  // clear search after add
+  setSearch('');
+};
 
   const updateCartQty = (variant_id: string, qty: number) => {
     if (qty <= 0) {
@@ -167,8 +186,8 @@ const POS: React.FC = () => {
 
   const getCalculatedCart = () => {
     const customer = customers.find(c => c.customer_id === customerId);
-    const buyerState = customer?.state || tenantState || 'Unknown';
-    const sellerState = tenantState || 'Unknown';
+    const sellerState = tenantState || 'Tamil Nadu';
+    const buyerState = customer?.state || tenantState || sellerState;
     
     const calculatedItems = cart.map(item => {
       const calc = calculateLineItem({
@@ -221,6 +240,7 @@ const POS: React.FC = () => {
 
       const payload = {
         invoice_number: `POS-${Date.now()}`,
+        branch_id: "MAIN",
         total_amount: totals.totalAmount,
         outstanding_amount: outstandingAmount,
         total_tax: totals.totalTax,
@@ -268,8 +288,20 @@ const POS: React.FC = () => {
     generateInvoicePDF(completedInvoice.invoice, completedInvoice.customer, { name: 'Vendor Mind' });
   };
 
-  const filteredProducts = products.filter(p => p.search_string.includes(search.toLowerCase()));
+  const filteredProducts = products.filter((p) => {
+  const q = search.toLowerCase().trim();
 
+  if (!q) return true;
+
+  return (
+    (p.product_name || "").toLowerCase().includes(q) ||
+    (p.barcode || "").toLowerCase().includes(q) ||
+    (p.sku || "").toLowerCase().includes(q)
+  );
+});
+
+console.log("Products Loaded:", products);
+console.log("Filtered Products:", filteredProducts);
   return (
     <div style={{ display: 'flex', gap: 'var(--space-6)', height: 'calc(100vh - 120px)' }}>
       
@@ -341,19 +373,71 @@ const POS: React.FC = () => {
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 'var(--space-4)', overflowY: 'auto', padding: 'var(--space-2)' }}>
-          {filteredProducts.slice(0, 50).map((p, i) => (
-            <NeuoCard 
-              key={i} 
-              onClick={() => addToCart(p)}
-              style={{ cursor: 'pointer', transition: 'transform 0.1s', display: 'flex', flexDirection: 'column', gap: '8px', padding: 'var(--space-4)' }}
-            >
-              <h4 className="body" style={{ margin: 0, fontWeight: 600 }}>{p.product_name}</h4>
-              <span className="body-sm" style={{ opacity: 0.7 }}>SKU: {p.sku || 'N/A'}</span>
-              <span className="metric-md" style={{ color: 'var(--color-cyprus)' }}>₹{p.selling_price.toFixed(2)}</span>
-            </NeuoCard>
-          ))}
-        </div>
+        <div
+  style={{
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+    gap: 'var(--space-4)',
+    overflowY: 'auto',
+    padding: 'var(--space-2)'
+  }}
+>
+  {filteredProducts.length === 0 ? (
+    <div
+      style={{
+        gridColumn: '1 / -1',
+        textAlign: 'center',
+        padding: '40px',
+        opacity: 0.6
+      }}
+    >
+      No products found.
+    </div>
+  ) : (
+    filteredProducts.slice(0, 50).map((p, i) => (
+      <NeuoCard
+        key={i}
+        onClick={() => addToCart(p)}
+        style={{
+          cursor: 'pointer',
+          transition: 'transform 0.1s',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
+          padding: 'var(--space-4)'
+        }}
+      >
+        <h4
+          className="body"
+          style={{ margin: 0, fontWeight: 600 }}
+        >
+          {p.product_name}
+        </h4>
+
+        <span
+          className="body-sm"
+          style={{ opacity: 0.7 }}
+        >
+          SKU: {p.sku || 'N/A'}
+        </span>
+
+        <span
+          className="body-sm"
+          style={{ opacity: 0.7 }}
+        >
+          Barcode: {p.barcode || 'N/A'}
+        </span>
+
+        <span
+          className="metric-md"
+          style={{ color: 'var(--color-cyprus)' }}
+        >
+          ₹{Number(p.selling_price || 0).toFixed(2)}
+        </span>
+      </NeuoCard>
+    ))
+  )}
+</div>
       </div>
 
       {/* Right Area: Cart & Checkout (30%) */}

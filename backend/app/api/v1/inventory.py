@@ -25,7 +25,11 @@ def get_categories(db: Session = Depends(get_db), current_user: User = Depends(g
     return db.query(Category).filter(Category.tenant_id == current_user.tenant_id).all()
 
 @router.post("/products", response_model=ProductResponse)
-def create_product(product: ProductCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def create_product(
+    product: ProductCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     db_product = Product(
         tenant_id=current_user.tenant_id,
         category_id=product.category_id,
@@ -33,10 +37,12 @@ def create_product(product: ProductCreate, db: Session = Depends(get_db), curren
         hsn_code=product.hsn_code,
         tax_rate=product.tax_rate
     )
+
     db.add(db_product)
     db.flush()
 
     db_variants = []
+
     for var in product.variants:
         db_variant = ProductVariant(
             product_id=db_product.product_id,
@@ -45,13 +51,25 @@ def create_product(product: ProductCreate, db: Session = Depends(get_db), curren
             purchase_price=var.purchase_price,
             selling_price=var.selling_price
         )
+
         db.add(db_variant)
+        db.flush()
+
+        inventory = Inventory(
+            tenant_id=current_user.tenant_id,
+            branch_id="MAIN",
+            variant_id=db_variant.variant_id,
+            quantity=0
+        )
+
+        db.add(inventory)
+
         db_variants.append(db_variant)
-    
+
     db.commit()
     db.refresh(db_product)
-    
-    res = ProductResponse(
+
+    return ProductResponse(
         product_id=db_product.product_id,
         name=db_product.name,
         category_id=db_product.category_id,
@@ -59,7 +77,6 @@ def create_product(product: ProductCreate, db: Session = Depends(get_db), curren
         tax_rate=db_product.tax_rate,
         variants=db_variants
     )
-    return res
 
 @router.get("/products", response_model=List[ProductResponse])
 def get_products(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -174,3 +191,43 @@ def get_stock(branch_id: Optional[str] = None, db: Session = Depends(get_db), cu
     if branch_id:
         query = query.filter(Inventory.branch_id == branch_id)
     return query.all()
+
+@router.get("/stock/details")
+def get_stock_details(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    inventory_rows = (
+        db.query(
+            Inventory,
+            ProductVariant,
+            Product
+        )
+        .join(
+            ProductVariant,
+            Inventory.variant_id == ProductVariant.variant_id
+        )
+        .join(
+            Product,
+            ProductVariant.product_id == Product.product_id
+        )
+        .filter(
+            Inventory.tenant_id == current_user.tenant_id
+        )
+        .all()
+    )
+
+    result = []
+
+    for inv, variant, product in inventory_rows:
+        result.append({
+            "variant_id": variant.variant_id,
+            "product_id": product.product_id,
+            "product_name": product.name,
+            "barcode": variant.barcode,
+            "sku": variant.sku,
+            "quantity": inv.quantity,
+            "selling_price": variant.selling_price
+        })
+
+    return result

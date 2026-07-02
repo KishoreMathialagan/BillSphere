@@ -49,17 +49,57 @@ export const initDb = async () => {
 
 // Data access functions
 export const saveProducts = async (products: any[]) => {
-  // Clear existing to avoid manual updates during sync
+  console.log("SAVE PRODUCTS CALLED");
+  console.log(products);
+
   await sqlocal.sql`DELETE FROM local_products`;
+
   for (const p of products) {
+    console.log("PRODUCT", p);
+
     for (const v of p.variants || []) {
+      console.log("VARIANT", v);
+
       await sqlocal.sql`
-        INSERT INTO local_products 
-        (variant_id, product_id, product_name, category_id, hsn_code, tax_rate, barcode, sku, selling_price)
-        VALUES (${v.variant_id}, ${p.product_id}, ${p.name}, ${p.category_id}, ${p.hsn_code || ''}, ${Number(p.tax_rate || 0)}, ${v.barcode || ''}, ${v.sku || ''}, ${Number(v.selling_price || 0)})
-      `;
+INSERT OR REPLACE INTO local_products
+(
+  variant_id,
+  product_id,
+  product_name,
+  category_id,
+  hsn_code,
+  tax_rate,
+  barcode,
+  sku,
+  selling_price
+)
+VALUES
+(
+  ${v.variant_id},
+  ${p.product_id},
+  ${p.name},
+  ${p.category_id},
+  ${p.hsn_code || ''},
+  ${Number(p.tax_rate || 0)},
+  ${v.barcode || ''},
+  ${v.sku || ''},
+  ${Number(v.selling_price || 0)}
+)
+`;
     }
   }
+
+  const test = await sqlocal.sql`
+    SELECT * FROM local_products
+  `;
+
+  console.log("LOCAL PRODUCTS AFTER SAVE:", test);
+  const verify = await sqlocal.sql`
+    SELECT * FROM local_products
+  `;
+
+  console.log("LOCAL PRODUCTS AFTER SAVE:", verify);
+  alert("LOCAL SQLITE PRODUCTS: " + verify.length);
 };
 
 export const saveCustomers = async (customers: any[]) => {
@@ -84,8 +124,21 @@ export const saveInventory = async (inventory: any[]) => {
 };
 
 export const getProducts = async () => {
-  const result = await sqlocal.sql`SELECT * FROM local_products`;
-  return result; // sqlocal returns array of objects
+  const result: any = await sqlocal.sql`
+    SELECT * FROM local_products
+  `;
+
+  console.log("SQLite Products Raw:", result);
+
+  if (Array.isArray(result)) {
+    return result;
+  }
+
+  if (result?.rows) {
+    return result.rows;
+  }
+
+  return [];
 };
 
 export const getCustomers = async () => {

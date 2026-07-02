@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../../services/api';
-import { calculateLineItem, calculateInvoiceTotals, TaxMode, DiscountType } from '../../utils/taxEngine';
+import { calculateLineItem, calculateInvoiceTotals, type TaxMode, type DiscountType } from '../../utils/taxEngine';
 import { useAuth } from '../../context/AuthContext';
 
 const PurchaseEntry: React.FC = () => {

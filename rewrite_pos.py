@@ -1,6 +1,6 @@
 import re
 
-with open('c:/Users/Lenovo/Downloads/BillSphere/frontend/src/pages/pos/POS.tsx', 'r', encoding='utf-8') as f:
+with open('c:/Users/Lenovo/Downloads/Billsphere/BillSphere/frontend/src/pages/pos/POS.tsx', 'r', encoding='utf-8') as f:
     pos_code = f.read()
 
 new_pos_code = """import React, { useState, useEffect, useRef } from 'react';

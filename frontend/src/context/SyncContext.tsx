@@ -57,14 +57,25 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const performDownlink = async () => {
     if (!navigator.onLine) return;
     try {
-      const [prodRes, custRes, invRes] = await Promise.all([
-        api.get('/inventory/products'),
-        api.get('/customers'),
-        api.get('/inventory/stock')
-      ]);
-      
+      const prodRes = await api.get('/inventory/products');
+
+let custRes = { data: [] };
+let invRes = { data: [] };
+
+try {
+  custRes = await api.get('/customers');
+} catch (e) {
+  console.warn("Customer sync failed");
+}
+
+try {
+  invRes = await api.get('/inventory/stock');
+} catch (e) {
+  console.warn("Inventory sync failed");
+}
+      console.log("API Products Count:", prodRes.data.length);
       await saveProducts(prodRes.data);
-      await saveCustomers(custRes.data);
+      await saveCustomers(custRes.data);  
       
       // If the inventory endpoint returns a list of { variant_id, quantity }, save it
       if (invRes.data && Array.isArray(invRes.data)) {
