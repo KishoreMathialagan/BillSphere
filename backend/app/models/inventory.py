@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Numeric, Integer, ForeignKey, DateTime
+from sqlalchemy import Column, String, Numeric, Integer, Float, ForeignKey, DateTime
 from app.db.session import Base
 import uuid
 import datetime
@@ -17,6 +17,9 @@ class Product(Base):
     name = Column(String, nullable=False)
     hsn_code = Column(String, nullable=True)
     tax_rate = Column(Numeric(5,2), default=0.0)
+    main_unit = Column(String, nullable=True)        # ← NEW
+    sub_unit = Column(String, nullable=True)         # ← NEW
+    conversion_factor = Column(Float, nullable=True) # ← NEW
 
 class ProductVariant(Base):
     __tablename__ = "product_variants"
@@ -56,4 +59,4 @@ class InventoryException(Base):
     difference = Column(Integer, nullable=False)
     timestamp = Column(DateTime, default=datetime.datetime.utcnow)
     user_id = Column(String, nullable=True)
-    status = Column(String, default="Pending") # "Pending", "Resolved"
+    status = Column(String, default="Pending")

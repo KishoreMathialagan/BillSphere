@@ -31,6 +31,9 @@ class ProductCreate(BaseModel):
     category_id: Optional[str] = None
     hsn_code: Optional[str] = None
     tax_rate: float = 0.0
+    main_unit: Optional[str] = None          # ← NEW
+    sub_unit: Optional[str] = None           # ← NEW
+    conversion_factor: Optional[float] = None # ← NEW
     variants: List[VariantCreate]
 
 class ProductResponse(BaseModel):
@@ -39,6 +42,9 @@ class ProductResponse(BaseModel):
     category_id: Optional[str]
     hsn_code: Optional[str]
     tax_rate: float
+    main_unit: Optional[str] = None          # ← NEW
+    sub_unit: Optional[str] = None           # ← NEW
+    conversion_factor: Optional[float] = None # ← NEW
     variants: List[VariantResponse] = []
     class Config:
         from_attributes = True
