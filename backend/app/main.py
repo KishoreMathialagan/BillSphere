@@ -34,6 +34,12 @@ except Exception:
 
 try:
     with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE invoices ADD COLUMN IF NOT EXISTS payment_mode VARCHAR DEFAULT 'CASH'"))
+except Exception:
+    pass
+
+try:
+    with engine.begin() as conn:
         conn.execute(text("ALTER TABLE products ADD COLUMN IF NOT EXISTS main_unit VARCHAR"))
 except Exception:
     pass

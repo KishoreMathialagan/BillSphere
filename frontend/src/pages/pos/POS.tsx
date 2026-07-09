@@ -25,6 +25,10 @@ const POS: React.FC = () => {
   // Tax Settings
   const [taxMode, setTaxMode] = useState<TaxMode>('EXCLUSIVE');
 
+  // Payment Mode
+  const [paymentMode, setPaymentMode] = useState<'CASH' | 'UPI'>('CASH');
+  const UPI_ID = 'mithunavannanjayaram-3@oksbi'; // 🔧 Replace with your actual UPI ID
+
   // Scanner State
   const [scanning, setScanning] = useState(false);
   const html5QrCode = useRef<Html5Qrcode | null>(null);
@@ -186,8 +190,8 @@ const POS: React.FC = () => {
 
   const getCalculatedCart = () => {
     const customer = customers.find(c => c.customer_id === customerId);
-    const sellerState = tenantState || 'Tamil Nadu';
-    const buyerState = customer?.state || tenantState || sellerState;
+    const buyerState = customer?.state || tenantState || 'Unknown';
+    const sellerState = tenantState || 'Unknown';
     
     const calculatedItems = cart.map(item => {
       const calc = calculateLineItem({
@@ -251,10 +255,11 @@ const POS: React.FC = () => {
         total_discount: totals.totalDiscount,
         is_tax_inclusive: taxMode === 'INCLUSIVE',
         tax_mode: taxMode,
-        status: amountPaid >= totals.totalAmount ? 'Paid' : 'Partial',
+        status: paymentMode === 'UPI' ? 'Paid' : (amountPaid >= totals.totalAmount ? 'Paid' : 'Partial'),
         offline_created_at: new Date().toISOString(),
         items: itemsPayload,
-        customer_id: customerId || null
+        customer_id: customerId || null,
+        payment_mode: paymentMode
       };
 
       await enqueueInvoice(payload);
@@ -275,7 +280,7 @@ const POS: React.FC = () => {
         customer: custObj
       });
       
-      if (amountPaid > 0) {
+      if (paymentMode === 'CASH' && amountPaid > 0) {
         hardwareService.openCashDrawer().catch(() => {});
       }
     } catch (err: any) {
@@ -560,15 +565,63 @@ console.log("Filtered Products:", filteredProducts);
                       {customers.map(c => <option key={c.customer_id} value={c.customer_id}>{c.name}</option>)}
                     </select>
                   </div>
+                  {/* Payment Mode Selector */}
                   <div>
-                    <label className="body-sm" style={{ fontWeight: 600, display: 'block', marginBottom: '4px' }}>Amount Received (₹)</label>
-                    <Input 
-                      type="number" 
-                      value={amountPaid || ''} 
-                      onChange={e => setAmountPaid(Number(e.target.value))}
-                      placeholder="0.00"
-                    />
+                    <label className="body-sm" style={{ fontWeight: 600, display: 'block', marginBottom: '8px' }}>Payment Mode</label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      {(['CASH', 'UPI'] as const).map(mode => (
+                        <button
+                          key={mode}
+                          onClick={() => { setPaymentMode(mode); if (mode === 'UPI') setAmountPaid(totals.totalAmount); }}
+                          style={{
+                            flex: 1, padding: '10px', borderRadius: 'var(--radius-md)', border: 'none', cursor: 'pointer',
+                            fontWeight: 700, fontSize: '14px', transition: 'all 0.15s',
+                            background: paymentMode === mode ? 'var(--color-cyprus)' : 'var(--color-sand)',
+                            color: paymentMode === mode ? 'white' : 'var(--color-night)',
+                            boxShadow: paymentMode === mode ? 'none' : 'var(--shadow-neuo-sm)'
+                          }}
+                        >
+                          {mode === 'CASH' ? '💵 Cash' : '📱 UPI'}
+                        </button>
+                      ))}
+                    </div>
                   </div>
+
+                  {/* Cash: Amount Received */}
+                  {paymentMode === 'CASH' && (
+                    <div>
+                      <label className="body-sm" style={{ fontWeight: 600, display: 'block', marginBottom: '4px' }}>Amount Received (₹)</label>
+                      <Input
+                        type="number"
+                        value={amountPaid || ''}
+                        onChange={e => setAmountPaid(Number(e.target.value))}
+                        placeholder="0.00"
+                      />
+                      {amountPaid > totals.totalAmount && (
+                        <div style={{ marginTop: '6px', fontSize: '13px', color: '#16a34a', fontWeight: 600 }}>
+                          💰 Change to return: ₹{(amountPaid - totals.totalAmount).toFixed(2)}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* UPI: QR Code */}
+                  {paymentMode === 'UPI' && cart.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', padding: '16px', background: 'white', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-neuo-sm)' }}>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-cyprus)' }}>📱 Scan to Pay ₹{totals.totalAmount.toFixed(2)}</div>
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(`upi://pay?pa=${UPI_ID}&pn=VendorMind&am=${totals.totalAmount.toFixed(2)}&cu=INR`)}`}
+                        alt="UPI QR Code"
+                        style={{ width: '160px', height: '160px', borderRadius: '8px' }}
+                      />
+                      <div style={{ fontSize: '12px', color: '#6b7280', textAlign: 'center' }}>
+                        UPI ID: <strong>{UPI_ID}</strong>
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#d97706', fontWeight: 600 }}>
+                        ⚠️ Click Checkout after customer pays
+                      </div>
+                    </div>
+                  )}
 
                   <Button 
                     variant="filled" 

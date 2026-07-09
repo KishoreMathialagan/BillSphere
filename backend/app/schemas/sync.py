@@ -14,6 +14,7 @@ class OfflineInvoiceSync(InvoiceCreate):
     total_sgst: Decimal = Decimal("0.00")
     total_igst: Decimal = Decimal("0.00")
     total_discount: Decimal = Decimal("0.00")
+    payment_mode: Optional[str] = "CASH"   # ← NEW
 
 class SyncPayload(BaseModel):
     invoices: List[OfflineInvoiceSync]

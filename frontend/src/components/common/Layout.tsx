@@ -30,6 +30,7 @@ const Layout: React.FC = () => {
     { path: '/app/categories', label: 'Categories', icon: '📁', shortLabel: 'Category' },
     { path: '/app/inventory', label: 'Stock & Alerts', icon: '📉', shortLabel: 'Stock' },
     { path: '/app/purchases', label: 'Purchases', icon: '🛒', shortLabel: 'Buy' },
+    { path: '/app/invoices', label: 'Invoice History', icon: '🧾', shortLabel: 'Sales' },
     { path: '/app/vendors/ocr', label: 'AI Invoice Scanner', icon: '📄', shortLabel: 'Scan' },
     { path: '/app/customers', label: 'Customers', icon: '👥', shortLabel: 'Users' },
     { path: '/app/vendors', label: 'Vendors', icon: '🏢', shortLabel: 'Vendor' },

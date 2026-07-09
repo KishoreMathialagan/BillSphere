@@ -33,6 +33,7 @@ import AISettings from './pages/settings/AISettings';
 import Profile from './pages/settings/Profile';
 import AIAssistant from './pages/assistant/AIAssistant';
 import ForecastingDashboard from './pages/forecasting/ForecastingDashboard';
+import InvoiceHistory from './pages/sales/InvoiceHistory';
 
 const Unauthorized = () => <div><h2>Unauthorized Access</h2></div>;
 
@@ -73,7 +74,7 @@ function App() {
               <Route path="/app/accounting/journals" element={<Journals />} />
               <Route path="/app/accounting/reports/pnl" element={<ProfitAndLoss />} />
               <Route path="/app/accounting/reports/balance-sheet" element={<BalanceSheet />} />
-              
+              <Route path="/app/invoices" element={<InvoiceHistory />} />
               <Route path="/app/settings/hardware" element={<HardwareSettings />} />
               <Route path="/app/settings/ai" element={<AISettings />} />
               <Route path="/app/settings/profile" element={<Profile />} />
