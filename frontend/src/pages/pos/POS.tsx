@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
+import QRCode from 'qrcode';
 import { generateInvoicePDF } from '../../utils/invoicePdf';
 import { getProducts, getCustomers, getInventoryByVariant, decrementInventoryLocal, enqueueInvoice } from '../../db/sqliteManager';
 import { useSync } from '../../context/SyncContext';
@@ -29,16 +30,29 @@ const POS: React.FC = () => {
   const [paymentMode, setPaymentMode] = useState<'CASH' | 'UPI'>('CASH');
   const UPI_ID = 'mithunavannanjayaram-3@oksbi'; // 🔧 Replace with your actual UPI ID
 
+  const { tenantState } = useAuth();
+
   // Scanner State
   const [scanning, setScanning] = useState(false);
   const html5QrCode = useRef<Html5Qrcode | null>(null);
+  const qrCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  // Generate QR when UPI mode is active and cart has items
+  useEffect(() => {
+    if (paymentMode === 'UPI' && cart.length > 0 && qrCanvasRef.current) {
+      const { totals } = getCalculatedCart();
+      const upiString = `upi://pay?pa=${UPI_ID}&pn=VendorMind&am=${totals.totalAmount.toFixed(2)}&cu=INR`;
+      QRCode.toCanvas(qrCanvasRef.current, upiString, { width: 180, margin: 1 }, (err) => {
+        if (err) console.error('QR Error:', err);
+      });
+    }
+  }, [paymentMode, cart, taxMode, customerId, tenantState, customers]);
 
   // Manual Billing State
   const [showManualBilling, setShowManualBilling] = useState(false);
   const [manualItem, setManualItem] = useState({ name: '', price: 0, quantity: 1, taxRate: 0, discountType: 'PERCENTAGE' as DiscountType, discountValue: 0 });
 
   const { isOnline, forceSync, inventoryMode } = useSync();
-  const { tenantState } = useAuth();
 
   useBarcodeScanner({
     onScan: (barcode) => {
@@ -609,11 +623,7 @@ console.log("Filtered Products:", filteredProducts);
                   {paymentMode === 'UPI' && cart.length > 0 && (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', padding: '16px', background: 'white', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-neuo-sm)' }}>
                       <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-cyprus)' }}>📱 Scan to Pay ₹{totals.totalAmount.toFixed(2)}</div>
-                      <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(`upi://pay?pa=${UPI_ID}&pn=VendorMind&am=${totals.totalAmount.toFixed(2)}&cu=INR`)}`}
-                        alt="UPI QR Code"
-                        style={{ width: '160px', height: '160px', borderRadius: '8px' }}
-                      />
+                      <canvas ref={qrCanvasRef} style={{ borderRadius: '8px' }} />
                       <div style={{ fontSize: '12px', color: '#6b7280', textAlign: 'center' }}>
                         UPI ID: <strong>{UPI_ID}</strong>
                       </div>
