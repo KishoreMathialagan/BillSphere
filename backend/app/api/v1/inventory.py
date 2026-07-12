@@ -6,9 +6,10 @@ from app.models.inventory import Category, Product, ProductVariant, Inventory, S
 from app.models.user import User
 from app.schemas.inventory import (
     CategoryCreate, CategoryResponse, ProductCreate, ProductResponse,
-    StockAdjustmentCreate, InventoryResponse
+    VariantCreate, VariantResponse, StockAdjustmentCreate, InventoryResponse
 )
 from app.api.dependencies import get_current_user
+from app.services.dashboard_service import DashboardService
 
 router = APIRouter()
 
@@ -183,6 +184,10 @@ def adjust_stock(adjustment: StockAdjustmentCreate, db: Session = Depends(get_db
     db.add(adj_log)
     db.commit()
     db.refresh(inv)
+    
+    # Invalidate Dashboard Cache
+    DashboardService.trigger_update_event(current_user.tenant_id)
+    
     return inv
 
 @router.get("/alerts", response_model=List[InventoryResponse])

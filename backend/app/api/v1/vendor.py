@@ -16,6 +16,7 @@ from app.schemas.vendor import (
 from app.api.dependencies import get_current_user
 from app.services.ocr_service import extract_invoice_data
 from app.services.tax_engine import calculate_line_item, calculate_invoice_totals, validate_gstin
+from app.services.dashboard_service import DashboardService
 
 router = APIRouter()
 
@@ -278,6 +279,10 @@ def add_vendor_purchase(vendor_id: str, purchase: PurchaseCreate, db: Session = 
     
     db.commit()
     db.refresh(db_purchase)
+    
+    # Invalidate Dashboard Cache
+    DashboardService.trigger_update_event(current_user.tenant_id)
+    
     return db_purchase
 
 @router.get("/all/history", response_model=List[PurchaseResponse])
