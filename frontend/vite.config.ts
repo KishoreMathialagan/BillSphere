@@ -17,5 +17,7 @@ export default defineConfig({
       "Cross-Origin-Opener-Policy": "same-origin",
       "Cross-Origin-Embedder-Policy": "require-corp",
     },
-  }
+    host: true,    // ← ADD THIS
+    port: 5173,    // ← ADD THIS
+  },
 })
