@@ -14,4 +14,4 @@ class Settings:
 settings = Settings()
 
 # Debug: print which DB is being used on startup
-print(f"🔌 Database: {settings.SQLALCHEMY_DATABASE_URI[:50]}...")
+print(f"Database: {settings.SQLALCHEMY_DATABASE_URI[:50]}...")

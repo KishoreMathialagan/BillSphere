@@ -16,6 +16,7 @@ from app.schemas.customer import InvoiceCreate, InvoiceResponse
 from app.schemas.sync import SyncPayload, SyncResponse
 from app.api.dependencies import get_current_user
 from app.services.tax_engine import calculate_line_item, calculate_invoice_totals
+from app.services.dashboard_service import DashboardService
 
 router = APIRouter()
 
@@ -192,6 +193,10 @@ def checkout_pos(invoice: InvoiceCreate, customer_id: Optional[str] = None, db: 
 
     db.commit()
     db.refresh(db_invoice)
+    
+    # Invalidate Dashboard Cache
+    DashboardService.trigger_update_event(current_user.tenant_id)
+    
     return db_invoice
 
 @router.get("/invoices", response_model=List[InvoiceResponse])
