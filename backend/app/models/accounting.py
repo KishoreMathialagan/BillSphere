@@ -21,6 +21,11 @@ class JournalEntry(Base):
     __tablename__ = "journal_entries"
     journal_id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     tenant_id = Column(String, ForeignKey("tenants.tenant_id"))
+    branch_id = Column(
+    String,
+    ForeignKey("branches.branch_id"),
+    nullable=True
+)
     entry_date = Column(DateTime, default=datetime.datetime.utcnow)
     reference = Column(String, nullable=True) # Invoice #, Bill #, etc.
     description = Column(String, nullable=True)
