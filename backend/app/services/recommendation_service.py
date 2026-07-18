@@ -187,3 +187,4 @@ class RecommendationService:
         rec_id += 1
 
         return recs
+        
