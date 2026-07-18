@@ -1,10 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import api from '../services/api';
-import {
-  initDb, saveProducts, saveCustomers, saveInventory,
-  getSyncQueue, removeFromQueue
-} from '../db/sqliteManager';
+import { getSyncQueue, removeFromQueue, initDb } from '../db/sqliteManager';
 import { useAuth } from './AuthContext';
 
 interface SyncContextType {
@@ -24,93 +21,47 @@ export const SyncProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [inventoryMode] = useState<string>("Strict");
   const { user } = useAuth();
 
-  // Watch network status
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
-
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
 
-  // Initialize DB and Downlink on Mount
+  // Only init the DB for the sync queue — no product/customer/inventory saving
   useEffect(() => {
     if (user) {
-      initDb().then(() => {
-        performDownlink();
-      });
+      initDb().catch(e => console.warn("SQLite init failed (offline queue unavailable):", e));
     }
   }, [user]);
 
-  // Try Uplink when coming back online
+  // Try uplink when coming back online
   useEffect(() => {
     if (isOnline && user) {
       performUplink();
     }
   }, [isOnline, user]);
 
-  const performDownlink = async () => {
-    if (!navigator.onLine) return;
-    try {
-      const prodRes = await api.get('/inventory/products');
-
-let custRes = { data: [] };
-let invRes = { data: [] };
-
-try {
-  custRes = await api.get('/customers');
-} catch (e) {
-  console.warn("Customer sync failed");
-}
-
-try {
-  invRes = await api.get('/inventory/stock');
-} catch (e) {
-  console.warn("Inventory sync failed");
-}
-      console.log("API Products Count:", prodRes.data.length);
-      await saveProducts(prodRes.data);
-      await saveCustomers(custRes.data);  
-      
-      // If the inventory endpoint returns a list of { variant_id, quantity }, save it
-      if (invRes.data && Array.isArray(invRes.data)) {
-         await saveInventory(invRes.data);
-      }
-      
-      setLastSync(new Date());
-    } catch (error) {
-      console.error("Downlink Sync Failed", error);
-    }
-  };
-
   const performUplink = async () => {
     if (!navigator.onLine) return;
-    
     try {
       const queue = await getSyncQueue();
       setSyncPending(queue.length);
-      
       if (queue.length === 0) return;
 
       const payloads = queue.map((q: any) => JSON.parse(q.payload));
-      
-      // Send batched to backend
       const response = await api.post('/sales/sync', { invoices: payloads });
-      
+
       if (response.status === 200) {
-        // Clear queue upon success
         for (const q of queue) {
           await removeFromQueue(q.id);
         }
         setSyncPending(0);
-        
-        // After successful uplink, fetch latest inventory to resolve stock levels
-        await performDownlink();
+        setLastSync(new Date());
       }
     } catch (error) {
       console.error("Uplink Sync Failed", error);
@@ -119,10 +70,9 @@ try {
 
   const forceSync = async () => {
     await performUplink();
-    await performDownlink();
   };
 
-  // Poll sync_queue to update badge
+  // Poll sync queue for badge count
   useEffect(() => {
     const interval = setInterval(async () => {
       if (user) {

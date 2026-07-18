@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
-import QRCode from 'qrcode';
 import { generateInvoicePDF } from '../../utils/invoicePdf';
-import { getProducts, getCustomers, getInventoryByVariant, decrementInventoryLocal, enqueueInvoice } from '../../db/sqliteManager';
+import { enqueueInvoice } from '../../db/sqliteManager';
+import api from '../../services/api';
 import { useSync } from '../../context/SyncContext';
 import { useAuth } from '../../context/AuthContext';
 import { useBarcodeScanner } from '../../hooks/useBarcodeScanner';
@@ -26,33 +26,16 @@ const POS: React.FC = () => {
   // Tax Settings
   const [taxMode, setTaxMode] = useState<TaxMode>('EXCLUSIVE');
 
-  // Payment Mode
-  const [paymentMode, setPaymentMode] = useState<'CASH' | 'UPI'>('CASH');
-  const UPI_ID = 'mithunavannanjayaram-3@oksbi'; // 🔧 Replace with your actual UPI ID
-
-  const { tenantState } = useAuth();
-
   // Scanner State
   const [scanning, setScanning] = useState(false);
   const html5QrCode = useRef<Html5Qrcode | null>(null);
-  const qrCanvasRef = useRef<HTMLCanvasElement | null>(null);
-
-  // Generate QR when UPI mode is active and cart has items
-  useEffect(() => {
-    if (paymentMode === 'UPI' && cart.length > 0 && qrCanvasRef.current) {
-      const { totals } = getCalculatedCart();
-      const upiString = `upi://pay?pa=${UPI_ID}&pn=VendorMind&am=${totals.totalAmount.toFixed(2)}&cu=INR`;
-      QRCode.toCanvas(qrCanvasRef.current, upiString, { width: 180, margin: 1 }, (err) => {
-        if (err) console.error('QR Error:', err);
-      });
-    }
-  }, [paymentMode, cart, taxMode, customerId, tenantState, customers]);
 
   // Manual Billing State
   const [showManualBilling, setShowManualBilling] = useState(false);
   const [manualItem, setManualItem] = useState({ name: '', price: 0, quantity: 1, taxRate: 0, discountType: 'PERCENTAGE' as DiscountType, discountValue: 0 });
 
   const { isOnline, forceSync, inventoryMode } = useSync();
+  const { tenantState } = useAuth();
 
   useBarcodeScanner({
     onScan: (barcode) => {
@@ -70,25 +53,19 @@ const POS: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      const prodRes = await getProducts();
-      console.log("Products Loaded:", prodRes);
-      alert("Products Count: " + (prodRes?.length || 0));
-      const custRes = await getCustomers();
+      // Load products directly from backend API
+      const prodRes = await api.get('/inventory/stock/details');
+      const custRes = await api.get('/customers');
 
-      console.log("POS Product Count:", prodRes?.length);
-      console.log("POS Products:", prodRes);
-      
-      const flatList: any[] = [];
-      (prodRes || []).forEach((p: any) => {
-        flatList.push({
-          ...p,
-          search_string: `${p.product_name} ${p.barcode || ''} ${p.sku || ''}`.toLowerCase()
-        });
-      });
+      const flatList: any[] = (prodRes.data || []).map((p: any) => ({
+        ...p,
+        search_string: `${p.product_name} ${p.barcode || ''} ${p.sku || ''}`.toLowerCase()
+      }));
+
       setProducts(flatList);
-      setCustomers(custRes || []);
+      setCustomers(custRes.data || []);
     } catch (err) {
-      console.error('Failed to load POS data from local DB', err);
+      console.error('Failed to load POS data from API', err);
     }
   };
 
@@ -235,9 +212,10 @@ const POS: React.FC = () => {
     if (inventoryMode === "Strict") {
       for (const item of cart) {
         if (!item.isManual) {
-          const qty = await getInventoryByVariant(item.variant_id);
-          if (qty < item.quantity) {
-            alert(`Out of Stock: Cannot sell ${item.quantity} of ${item.product_name}. Only ${qty} left locally.`);
+          const match = products.find(p => p.variant_id === item.variant_id);
+          const currentQty = match?.quantity ?? 0;
+          if (currentQty < item.quantity) {
+            alert(`Out of Stock: Cannot sell ${item.quantity} of ${item.product_name}. Only ${currentQty} left.`);
             return;
           }
         }
@@ -269,20 +247,20 @@ const POS: React.FC = () => {
         total_discount: totals.totalDiscount,
         is_tax_inclusive: taxMode === 'INCLUSIVE',
         tax_mode: taxMode,
-        status: paymentMode === 'UPI' ? 'Paid' : (amountPaid >= totals.totalAmount ? 'Paid' : 'Partial'),
+        status: amountPaid >= totals.totalAmount ? 'Paid' : 'Partial',
         offline_created_at: new Date().toISOString(),
         items: itemsPayload,
-        customer_id: customerId || null,
-        payment_mode: paymentMode
+        customer_id: customerId || null
       };
 
       await enqueueInvoice(payload);
-      
-      for (const item of cart) {
-        if (!item.isManual) {
-          await decrementInventoryLocal(item.variant_id, item.quantity);
-        }
-      }
+
+      // Update local product quantities optimistically
+      setProducts(prev => prev.map(p => {
+        const cartItem = cart.find(c => c.variant_id === p.variant_id);
+        if (cartItem) return { ...p, quantity: Math.max(0, (p.quantity || 0) - cartItem.quantity) };
+        return p;
+      }));
 
       if (isOnline) {
         forceSync();
@@ -294,7 +272,7 @@ const POS: React.FC = () => {
         customer: custObj
       });
       
-      if (paymentMode === 'CASH' && amountPaid > 0) {
+      if (amountPaid > 0) {
         hardwareService.openCashDrawer().catch(() => {});
       }
     } catch (err: any) {
@@ -308,19 +286,14 @@ const POS: React.FC = () => {
   };
 
   const filteredProducts = products.filter((p) => {
-  const q = search.toLowerCase().trim();
-
-  if (!q) return true;
-
-  return (
-    (p.product_name || "").toLowerCase().includes(q) ||
-    (p.barcode || "").toLowerCase().includes(q) ||
-    (p.sku || "").toLowerCase().includes(q)
-  );
-});
-
-console.log("Products Loaded:", products);
-console.log("Filtered Products:", filteredProducts);
+    const q = search.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      (p.product_name || "").toLowerCase().includes(q) ||
+      (p.barcode || "").toLowerCase().includes(q) ||
+      (p.sku || "").toLowerCase().includes(q)
+    );
+  });
   return (
     <div style={{ display: 'flex', gap: 'var(--space-6)', height: 'calc(100vh - 120px)' }}>
       
@@ -579,59 +552,15 @@ console.log("Filtered Products:", filteredProducts);
                       {customers.map(c => <option key={c.customer_id} value={c.customer_id}>{c.name}</option>)}
                     </select>
                   </div>
-                  {/* Payment Mode Selector */}
                   <div>
-                    <label className="body-sm" style={{ fontWeight: 600, display: 'block', marginBottom: '8px' }}>Payment Mode</label>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      {(['CASH', 'UPI'] as const).map(mode => (
-                        <button
-                          key={mode}
-                          onClick={() => { setPaymentMode(mode); if (mode === 'UPI') setAmountPaid(totals.totalAmount); }}
-                          style={{
-                            flex: 1, padding: '10px', borderRadius: 'var(--radius-md)', border: 'none', cursor: 'pointer',
-                            fontWeight: 700, fontSize: '14px', transition: 'all 0.15s',
-                            background: paymentMode === mode ? 'var(--color-cyprus)' : 'var(--color-sand)',
-                            color: paymentMode === mode ? 'white' : 'var(--color-night)',
-                            boxShadow: paymentMode === mode ? 'none' : 'var(--shadow-neuo-sm)'
-                          }}
-                        >
-                          {mode === 'CASH' ? '💵 Cash' : '📱 UPI'}
-                        </button>
-                      ))}
-                    </div>
+                    <label className="body-sm" style={{ fontWeight: 600, display: 'block', marginBottom: '4px' }}>Amount Received (₹)</label>
+                    <Input 
+                      type="number" 
+                      value={amountPaid || ''} 
+                      onChange={e => setAmountPaid(Number(e.target.value))}
+                      placeholder="0.00"
+                    />
                   </div>
-
-                  {/* Cash: Amount Received */}
-                  {paymentMode === 'CASH' && (
-                    <div>
-                      <label className="body-sm" style={{ fontWeight: 600, display: 'block', marginBottom: '4px' }}>Amount Received (₹)</label>
-                      <Input
-                        type="number"
-                        value={amountPaid || ''}
-                        onChange={e => setAmountPaid(Number(e.target.value))}
-                        placeholder="0.00"
-                      />
-                      {amountPaid > totals.totalAmount && (
-                        <div style={{ marginTop: '6px', fontSize: '13px', color: '#16a34a', fontWeight: 600 }}>
-                          💰 Change to return: ₹{(amountPaid - totals.totalAmount).toFixed(2)}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* UPI: QR Code */}
-                  {paymentMode === 'UPI' && cart.length > 0 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', padding: '16px', background: 'white', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-neuo-sm)' }}>
-                      <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-cyprus)' }}>📱 Scan to Pay ₹{totals.totalAmount.toFixed(2)}</div>
-                      <canvas ref={qrCanvasRef} style={{ borderRadius: '8px' }} />
-                      <div style={{ fontSize: '12px', color: '#6b7280', textAlign: 'center' }}>
-                        UPI ID: <strong>{UPI_ID}</strong>
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#d97706', fontWeight: 600 }}>
-                        ⚠️ Click Checkout after customer pays
-                      </div>
-                    </div>
-                  )}
 
                   <Button 
                     variant="filled" 
