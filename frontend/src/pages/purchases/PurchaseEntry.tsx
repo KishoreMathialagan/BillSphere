@@ -237,7 +237,7 @@ const PurchaseEntry: React.FC = () => {
             <h3 style={{ margin: '0 0 16px', fontSize: '16px', fontWeight: 600, color: 'var(--text-h)' }}>Line Items (Inventory will be updated)</h3>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {calculatedItems.map((item, index) => (
+              {calculatedItems.map((item, _index) => (
                 <div key={item.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr auto', gap: '12px', alignItems: 'end', background: 'var(--code-bg)', padding: '12px', borderRadius: '8px' }}>
                   
                   <div>
