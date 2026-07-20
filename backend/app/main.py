@@ -64,8 +64,11 @@ app.add_middleware(
         "http://localhost:5173",
         "https://localhost:5173",
         "https://bill-sphere-zxwf.vercel.app",
-        "https://bill-sphere-zxwf.vercel.app/"
+        "https://bill-sphere-zxwf.vercel.app/",
+        "https://site--vm-frontend--6vydv7jkfgqs.code.run",
+        "https://site--vm-frontend--6vydv7jkfgqs.code.run/"
     ],
+    allow_origin_regex=r"https://.*\.code\.run",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

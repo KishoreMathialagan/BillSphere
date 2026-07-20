@@ -1,7 +1,9 @@
 import axios from 'axios';
 
+const API_URL = import.meta.env.VITE_API_URL || 'https://backend--vendor-mind--6vydv7jkfgqs.code.run/api/v1';
+
 const api = axios.create({
-  baseURL: 'http://127.0.0.1:8000/api/v1',
+  baseURL: API_URL,
 });
 
 api.interceptors.request.use((config) => {
@@ -22,7 +24,6 @@ api.interceptors.response.use(
         const refreshToken = localStorage.getItem('refresh_token');
         if (!refreshToken) throw new Error('No refresh token');
         
-        const API_URL = import.meta.env.VITE_API_URL || 'https://billsphere-backend.onrender.com/api/v1';
         const res = await axios.post(`${API_URL}/auth/refresh`, {
           refresh_token: refreshToken
         });
