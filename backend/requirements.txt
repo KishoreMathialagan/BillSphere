@@ -4,8 +4,11 @@ sqlalchemy
 pydantic
 pydantic[email]
 python-jose[cryptography]
-pytesseract
+bcrypt==4.0.1
 passlib[bcrypt]
+pytesseract
+Pillow
+pdf2image
 python-multipart
 psycopg2-binary
 redis

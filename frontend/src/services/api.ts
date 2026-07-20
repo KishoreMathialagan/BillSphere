@@ -3,7 +3,11 @@ import axios from 'axios';
 const API_URL = import.meta.env.VITE_API_URL || 'https://backend--vendor-mind--6vydv7jkfgqs.code.run/api/v1';
 
 const api = axios.create({
+<<<<<<< HEAD
   baseURL: API_URL,
+=======
+  baseURL: import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/v1',
+>>>>>>> cec7f2f7c9f4b77a640742988420b70c6f50fd19
 });
 
 api.interceptors.request.use((config) => {
