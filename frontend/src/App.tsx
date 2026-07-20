@@ -21,12 +21,11 @@ import Transfers from './pages/branches/Transfers';
 import BranchReports from './pages/branches/BranchReports';
 import { SyncProvider } from './context/SyncContext';
 import POS from './pages/pos/POS';
-
+import MobilePOS from './pages/pos/MobilePOS';
 import ChartOfAccounts from './pages/accounting/ChartOfAccounts';
 import Journals from './pages/accounting/Journals';
 import ProfitAndLoss from './pages/accounting/ProfitAndLoss';
 import BalanceSheet from './pages/accounting/BalanceSheet';
-
 import GSTReports from './pages/reports/GSTReports';
 import HardwareSettings from './pages/settings/HardwareSettings';
 import AISettings from './pages/settings/AISettings';
@@ -34,6 +33,7 @@ import Profile from './pages/settings/Profile';
 import AIAssistant from './pages/assistant/AIAssistant';
 import ForecastingDashboard from './pages/forecasting/ForecastingDashboard';
 import InvoiceHistory from './pages/sales/InvoiceHistory';
+import Reports from './pages/reports/Reports';
 
 const Unauthorized = () => <div><h2>Unauthorized Access</h2></div>;
 
@@ -42,47 +42,48 @@ function App() {
     <AuthProvider>
       <SyncProvider>
         <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<SetupWizard />} />
-          <Route path="/unauthorized" element={<Unauthorized />} />
-          
-          <Route element={<ProtectedRoute />}>
-            <Route element={<Layout />}>
-              <Route path="/app/dashboard" element={<Dashboard />} />
-              <Route path="/app/pos" element={<POS />} />
-              <Route path="/app/categories" element={<Categories />} />
-              <Route path="/app/products" element={<Products />} />
-              <Route path="/app/products/new" element={<ProductForm />} />
-              <Route path="/app/products/edit/:id" element={<ProductForm />} />
-              <Route path="/app/products/:id" element={<ProductForm isViewOnly={true} />} />
-              <Route path="/app/inventory" element={<StockManagement />} />
-              <Route path="/app/customers" element={<Customers />} />
-              <Route path="/app/customers/:id" element={<CustomerDetail />} />
-              <Route path="/app/vendors" element={<Vendors />} />
-              <Route path="/app/vendors/:id" element={<VendorDetail />} />
-              <Route path="/app/vendors/ocr" element={<OCRPurchase />} />
-              <Route path="/app/purchases" element={<Purchases />} />
-              <Route path="/app/purchases/new" element={<PurchaseEntry />} />
-              <Route path="/app/branches" element={<Branches />} />
-              <Route path="/app/transfers" element={<Transfers />} />
-              <Route path="/app/reports/branches" element={<BranchReports />} />
-              <Route path="/app/reports/gst" element={<GSTReports />} />
-              
-              <Route path="/app/accounting/accounts" element={<ChartOfAccounts />} />
-              <Route path="/app/accounting/journals" element={<Journals />} />
-              <Route path="/app/accounting/reports/pnl" element={<ProfitAndLoss />} />
-              <Route path="/app/accounting/reports/balance-sheet" element={<BalanceSheet />} />
-              <Route path="/app/invoices" element={<InvoiceHistory />} />
-              <Route path="/app/settings/hardware" element={<HardwareSettings />} />
-              <Route path="/app/settings/ai" element={<AISettings />} />
-              <Route path="/app/settings/profile" element={<Profile />} />
-              <Route path="/app/assistant" element={<AIAssistant />} />
-              <Route path="/app/forecasting" element={<ForecastingDashboard />} />
+          <Routes>
+            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<SetupWizard />} />
+            <Route path="/unauthorized" element={<Unauthorized />} />
+
+            <Route element={<ProtectedRoute />}>
+              <Route element={<Layout />}>
+                <Route path="/app/dashboard" element={<Dashboard />} />
+                <Route path="/app/pos" element={<POS />} />
+                <Route path="/app/pos/mobile" element={<MobilePOS />} />
+                <Route path="/app/categories" element={<Categories />} />
+                <Route path="/app/products" element={<Products />} />
+                <Route path="/app/products/new" element={<ProductForm />} />
+                <Route path="/app/products/edit/:id" element={<ProductForm />} />
+                <Route path="/app/products/:id" element={<ProductForm isViewOnly={true} />} />
+                <Route path="/app/inventory" element={<StockManagement />} />
+                <Route path="/app/customers" element={<Customers />} />
+                <Route path="/app/customers/:id" element={<CustomerDetail />} />
+                <Route path="/app/vendors" element={<Vendors />} />
+                <Route path="/app/vendors/:id" element={<VendorDetail />} />
+                <Route path="/app/vendors/ocr" element={<OCRPurchase />} />
+                <Route path="/app/purchases" element={<Purchases />} />
+                <Route path="/app/purchases/new" element={<PurchaseEntry />} />
+                <Route path="/app/branches" element={<Branches />} />
+                <Route path="/app/transfers" element={<Transfers />} />
+                <Route path="/app/reports/branches" element={<BranchReports />} />
+                <Route path="/app/reports" element={<Reports />} />
+                <Route path="/app/reports/gst" element={<GSTReports />} />
+                <Route path="/app/accounting/accounts" element={<ChartOfAccounts />} />
+                <Route path="/app/accounting/journals" element={<Journals />} />
+                <Route path="/app/accounting/reports/pnl" element={<ProfitAndLoss />} />
+                <Route path="/app/accounting/reports/balance-sheet" element={<BalanceSheet />} />
+                <Route path="/app/invoices" element={<InvoiceHistory />} />
+                <Route path="/app/settings/hardware" element={<HardwareSettings />} />
+                <Route path="/app/settings/ai" element={<AISettings />} />
+                <Route path="/app/settings/profile" element={<Profile />} />
+                <Route path="/app/assistant" element={<AIAssistant />} />
+                <Route path="/app/forecasting" element={<ForecastingDashboard />} />
+              </Route>
             </Route>
-          </Route>
-        </Routes>
+          </Routes>
         </BrowserRouter>
       </SyncProvider>
     </AuthProvider>
