@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { NeuoCard } from '../components/molecules/NeuoCard';
 import { GlassCard } from '../components/molecules/GlassCard';
